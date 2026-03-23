@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { Plane, Home, Landmark, Wine, Coffee, Camera, Utensils, ShoppingBag, Train, Music, type LucideIcon } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "./AuthContext";
 
 interface Activity {
   id: number;
@@ -45,10 +47,22 @@ interface Trip {
   memberInitials: string[];
 }
 
+interface CreateTripData {
+  title: string;
+  destinations: string[];
+  start_date: string;
+  end_date: string;
+  budget?: number;
+  currency?: string;
+}
+
 interface TripContextType {
   activeTrip: Trip | null;
   setActiveTrip: (trip: Trip | null) => void;
   trips: Trip[];
+  loading: boolean;
+  createTrip: (data: CreateTripData) => Promise<{ error: string | null }>;
+  loadTrips: () => Promise<void>;
 }
 
 const TripContext = createContext<TripContextType | undefined>(undefined);
@@ -588,11 +602,124 @@ const mockTrips: Trip[] = [
   },
 ];
 
+function generateInviteCode(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): Trip {
+  const destinations = (dbTrip.destinations as string[]) || [];
+  const startDate = dbTrip.start_date ? new Date(dbTrip.start_date as string) : new Date();
+  const endDate = dbTrip.end_date ? new Date(dbTrip.end_date as string) : new Date();
+  const diffDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+  const flagMap: Record<string, string> = {
+    spain: "\u{1F1EA}\u{1F1F8}", france: "\u{1F1EB}\u{1F1F7}", italy: "\u{1F1EE}\u{1F1F9}", germany: "\u{1F1E9}\u{1F1EA}",
+    uk: "\u{1F1EC}\u{1F1E7}", portugal: "\u{1F1F5}\u{1F1F9}", japan: "\u{1F1EF}\u{1F1F5}", usa: "\u{1F1FA}\u{1F1F8}",
+  };
+  const defaultFlag = "\u{1F30D}";
+
+  const daysPerCity = destinations.length > 0 ? Math.max(1, Math.floor(diffDays / destinations.length)) : diffDays;
+
+  const cities: City[] = destinations.map((dest) => ({
+    name: dest,
+    flag: flagMap[dest.toLowerCase()] || defaultFlag,
+    days: daysPerCity,
+    activities: [[]],
+  }));
+
+  const days: Day[] = Array.from({ length: Math.min(diffDays, 14) }, (_, i) => {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    return {
+      day: i + 1,
+      date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      active: i === 0,
+    };
+  });
+
+  const startStr = startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const endStr = endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  return {
+    id: typeof dbTrip.id === "number" ? dbTrip.id : index + 1000,
+    name: (dbTrip.title as string) || "Untitled Trip",
+    dates: `${startStr} \u2013 ${endStr}`,
+    duration: `${diffDays} days`,
+    status: (dbTrip.status as string) === "completed" ? "Completed" : "Active",
+    cities,
+    days,
+    members: 1,
+    saved: 0,
+    cityCount: cities.length,
+    code: (dbTrip.invite_code as string) || "------",
+    memberColors: ["bg-orange-500"],
+    memberInitials: ["Y"],
+  };
+}
+
 export function TripProvider({ children }: { children: ReactNode }) {
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
+  const [supabaseTrips, setSupabaseTrips] = useState<Trip[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  const loadTrips = useCallback(async () => {
+    if (!user) {
+      setSupabaseTrips([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("trips")
+      .select("*")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data && data.length > 0) {
+      setSupabaseTrips(data.map((t, i) => mapSupabaseTripToTrip(t, i)));
+    } else {
+      setSupabaseTrips([]);
+    }
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    loadTrips();
+  }, [loadTrips]);
+
+  const createTrip = async (data: CreateTripData): Promise<{ error: string | null }> => {
+    if (!user) return { error: "You must be logged in to create a trip" };
+
+    const { error } = await supabase.from("trips").insert({
+      title: data.title,
+      destinations: data.destinations.filter((d) => d.trim() !== ""),
+      start_date: data.start_date,
+      end_date: data.end_date,
+      budget: data.budget || 0,
+      currency: data.currency || "USD",
+      owner_id: user.id,
+      mode: "planning",
+      status: "active",
+      invite_code: generateInviteCode(),
+    });
+
+    if (error) return { error: error.message };
+
+    await loadTrips();
+    return { error: null };
+  };
+
+  // Use Supabase trips if available, otherwise fall back to mock data
+  const trips = user && supabaseTrips.length > 0 ? supabaseTrips : mockTrips;
 
   return (
-    <TripContext.Provider value={{ activeTrip, setActiveTrip, trips: mockTrips }}>
+    <TripContext.Provider value={{ activeTrip, setActiveTrip, trips, loading, createTrip, loadTrips }}>
       {children}
     </TripContext.Provider>
   );

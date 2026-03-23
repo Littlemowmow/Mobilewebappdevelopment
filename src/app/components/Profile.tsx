@@ -1,8 +1,21 @@
 import { Settings, Bell, HelpCircle, LogOut, ChevronRight, User, Award, Map, Moon, Sun } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router";
 
 export function Profile() {
   const { theme, toggleTheme } = useTheme();
+  const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const displayName = profile?.display_name || profile?.name || "User";
+  const displayEmail = profile?.email || "—";
+  const displayInitial = displayName.charAt(0).toUpperCase();
+
+  const handleLogOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <div className="px-5 py-4 max-w-md mx-auto pb-24">

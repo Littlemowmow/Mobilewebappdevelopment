@@ -3,7 +3,7 @@ import { useTrip } from "../context/TripContext";
 import { Link } from "react-router";
 import { useState } from "react";
 
-export function Schedule() {
+export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
   const { activeTrip, setActiveTrip } = useTrip();
   const [selectedCity, setSelectedCity] = useState(0);
   const [selectedDay, setSelectedDay] = useState(0);
@@ -32,8 +32,9 @@ export function Schedule() {
   return (
     <div className="px-5 py-4 max-w-md mx-auto pb-24">
       {/* Header with back to trips */}
+      {!hideHeader && (
       <div className="flex items-center gap-3 mb-5 pt-1">
-        <button 
+        <button
           onClick={() => setActiveTrip(null)}
           className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent"
         >
@@ -41,6 +42,7 @@ export function Schedule() {
         </button>
         <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">{activeTrip.name}</h1>
       </div>
+      )}
 
       {/* City Pills */}
       <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-hide">
@@ -67,11 +69,12 @@ export function Schedule() {
 
       {/* Day Pills */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-1 scrollbar-hide">
-        {activeTrip.days.map((day) => (
+        {activeTrip.days.map((day, index) => (
           <button
             key={day.day}
+            onClick={() => setSelectedDay(index)}
             className={`px-5 py-3.5 rounded-2xl whitespace-nowrap transition-all ${
-              day.active
+              index === selectedDay
                 ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md"
                 : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent"
             }`}
@@ -84,8 +87,8 @@ export function Schedule() {
 
       {/* Date Header */}
       <div className="mb-5">
-        <h2 className="text-[24px] mb-1.5 font-semibold tracking-tight text-zinc-900 dark:text-white">Arrival Day</h2>
-        <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">Thursday, June 15 · Barcelona</p>
+        <h2 className="text-[24px] mb-1.5 font-semibold tracking-tight text-zinc-900 dark:text-white">{selectedDay === 0 ? "Arrival Day" : `Day ${selectedDay + 1}`}</h2>
+        <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">{activeTrip.days[selectedDay]?.date} · {currentCity.name}</p>
       </div>
 
       {/* Activities */}

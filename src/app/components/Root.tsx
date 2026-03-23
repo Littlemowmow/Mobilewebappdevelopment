@@ -1,10 +1,24 @@
-import { Outlet, Link, useLocation } from "react-router";
-import { Compass, Plane, User } from "lucide-react";
+import { Outlet, Link, useLocation, Navigate } from "react-router";
+import { Compass, Plane, User, Loader2 } from "lucide-react";
 import { useTrip } from "../context/TripContext";
+import { useAuth } from "../context/AuthContext";
 
 export function Root() {
   const location = useLocation();
   const { activeTrip } = useTrip();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   const navItems = [
     { path: "/", label: "Discover", icon: Compass },

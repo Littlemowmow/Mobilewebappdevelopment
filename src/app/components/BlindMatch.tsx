@@ -2,7 +2,7 @@ import { ArrowLeft, Lightbulb, Check, Clock } from "lucide-react";
 import { Link } from "react-router";
 import { useState } from "react";
 
-const members = [
+const initialMembers = [
   { name: "Hadi", initial: "H", status: "Voted", color: "bg-gradient-to-br from-orange-500 to-orange-600", isYou: true },
   { name: "Sara", initial: "S", status: "Voted", color: "bg-gradient-to-br from-teal-500 to-teal-600", isYou: false },
   { name: "Zayd", initial: "Z", status: "Waiting", color: "bg-gradient-to-br from-pink-500 to-pink-600", isYou: false },
@@ -52,20 +52,31 @@ const votingItems = [
   },
 ];
 
-export function BlindMatch() {
+export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
   const [selectedTab, setSelectedTab] = useState<"voting" | "decided">("voting");
+  const [members, setMembers] = useState(initialMembers);
   const votedCount = members.filter(m => m.status === "Voted").length;
   const waitingCount = members.filter(m => m.status === "Waiting").length;
+
+  const toggleVote = (name: string) => {
+    setMembers(prev => prev.map(m =>
+      m.name === name && m.isYou
+        ? { ...m, status: m.status === "Voted" ? "Waiting" : "Voted" }
+        : m
+    ));
+  };
 
   return (
     <div className="min-h-screen px-5 py-4 max-w-md mx-auto">
       {/* Header */}
+      {!hideHeader && (
       <div className="flex items-center gap-3 mb-8 pt-1">
         <Link to="/trips" className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent">
           <ArrowLeft className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
         </Link>
         <h1 className="text-[24px] tracking-tight font-semibold text-zinc-900 dark:text-white">Blind Match</h1>
       </div>
+      )}
 
       {/* Icon */}
       <div className="flex justify-center mb-8">
@@ -114,7 +125,11 @@ export function BlindMatch() {
 
         <div className="space-y-4">
           {members.map((member) => (
-            <div key={member.name} className="flex items-center justify-between">
+            <div
+              key={member.name}
+              className={`flex items-center justify-between${member.isYou ? " cursor-pointer" : ""}`}
+              onClick={() => member.isYou && toggleVote(member.name)}
+            >
               <div className="flex items-center gap-3.5">
                 <div className={`w-12 h-12 rounded-2xl ${member.color} flex items-center justify-center text-white shadow-lg border-2 border-white dark:border-zinc-950`}>
                   <span className="text-lg font-bold">{member.initial}</span>
@@ -143,7 +158,7 @@ export function BlindMatch() {
 
       {/* Nudge Card */}
       {waitingCount > 0 && (
-        <button className="w-full bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-900/30 dark:to-yellow-950/30 border-2 border-yellow-200 dark:border-yellow-700/50 rounded-[20px] p-5 flex items-center gap-3 hover:from-yellow-100 hover:to-yellow-50 dark:hover:from-yellow-900/40 dark:hover:to-yellow-950/40 transition-all shadow-sm dark:shadow-none">
+        <button onClick={() => alert('Reminder sent!')} className="w-full bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-900/30 dark:to-yellow-950/30 border-2 border-yellow-200 dark:border-yellow-700/50 rounded-[20px] p-5 flex items-center gap-3 hover:from-yellow-100 hover:to-yellow-50 dark:hover:from-yellow-900/40 dark:hover:to-yellow-950/40 transition-all shadow-sm dark:shadow-none">
           <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl flex items-center justify-center flex-shrink-0 border border-yellow-200 dark:border-yellow-700/50">
             <Lightbulb className="w-5 h-5 text-yellow-600 dark:text-yellow-500" fill="currentColor" />
           </div>

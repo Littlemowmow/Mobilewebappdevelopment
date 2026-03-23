@@ -4,7 +4,7 @@ import { useBudget } from "../context/BudgetContext";
 import { Link } from "react-router";
 import { useState } from "react";
 
-export function Budget() {
+export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const { activeTrip, setActiveTrip } = useTrip();
   const { budgetData } = useBudget();
   const [selectedCity, setSelectedCity] = useState("All");
@@ -39,8 +39,9 @@ export function Budget() {
   return (
     <div className="px-5 py-4 max-w-md mx-auto pb-24">
       {/* Header with back to trips */}
+      {!hideHeader && (
       <div className="flex items-center gap-3 mb-5 pt-1">
-        <button 
+        <button
           onClick={() => setActiveTrip(null)}
           className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent"
         >
@@ -48,6 +49,7 @@ export function Budget() {
         </button>
         <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">{activeTrip.name}</h1>
       </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 mb-5 p-1 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm dark:shadow-none border border-zinc-200 dark:border-transparent">

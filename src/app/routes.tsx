@@ -5,8 +5,13 @@ import { Trips } from "./components/Trips";
 import { TripDetail } from "./components/TripDetail";
 import { Profile } from "./components/Profile";
 import { NewTrip } from "./components/NewTrip";
+import { Login } from "./components/Login";
 
 export const router = createBrowserRouter([
+  {
+    path: "/login",
+    Component: Login,
+  },
   {
     path: "/",
     Component: Root,
