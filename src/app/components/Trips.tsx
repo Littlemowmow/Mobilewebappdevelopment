@@ -3,27 +3,20 @@ import { Link, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export function Trips() {
   const { activeTrip, setActiveTrip, trips, loadTrips } = useTrip();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const hasAutoNavigated = useRef(false);
-
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
 
-  // Auto-navigate to active trip on first render
+  // Clear active trip when viewing the list
   useEffect(() => {
-    if (hasAutoNavigated.current) return;
-    const active = trips.find(t => t.status === "Active");
-    if (active) {
-      hasAutoNavigated.current = true;
-      navigate(`/trips/${active.id}`);
-    }
-  }, [trips, navigate]);
+    setActiveTrip(null);
+  }, []);
 
   const handleJoinTrip = async () => {
     const code = joinCode.trim().toUpperCase();
@@ -64,6 +57,7 @@ export function Trips() {
   };
 
   const activeTrips = trips.filter(t => t.status === "Active");
+  const planningTrips = trips.filter(t => t.status !== "Active" && t.status !== "Completed");
   const completedTrips = trips.filter(t => t.status === "Completed");
 
   const handleTripClick = (trip: typeof trips[0]) => {
@@ -191,6 +185,30 @@ export function Trips() {
                   </div>
                 </div>
               </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Planning Trips */}
+      {planningTrips.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Planning</h3>
+          {planningTrips.map((trip) => (
+            <button
+              key={trip.id}
+              onClick={() => handleTripClick(trip)}
+              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[24px] p-5 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors shadow-sm dark:shadow-none mb-3"
+            >
+              <div className="bg-orange-50 dark:bg-orange-900/30 p-4 rounded-2xl border border-orange-100/80 dark:border-orange-800/50">
+                <span className="text-3xl">{trip.cities[0]?.flag || "🌍"}</span>
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="text-[17px] mb-1 font-semibold text-zinc-900 dark:text-white">{trip.name}</h3>
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">{trip.dates} · Planning</p>
+              </div>
+              <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide border border-blue-100 dark:border-transparent">PLANNING</span>
+              <ChevronRight className="w-5 h-5 text-zinc-400 dark:text-zinc-600" />
             </button>
           ))}
         </div>
