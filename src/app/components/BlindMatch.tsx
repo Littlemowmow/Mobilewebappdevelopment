@@ -1,4 +1,6 @@
-import { ArrowLeft, Lightbulb, Check, Clock } from "lucide-react";
+"use client";
+
+import { ArrowLeft, Lightbulb, Check, Clock, ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
 import { Link } from "react-router";
 import { useState } from "react";
 
@@ -55,8 +57,10 @@ const votingItems = [
 export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
   const [selectedTab, setSelectedTab] = useState<"voting" | "decided">("voting");
   const [members, setMembers] = useState(initialMembers);
+  const [itemVotes, setItemVotes] = useState<Record<number, 'up' | 'down' | null>>({});
   const votedCount = members.filter(m => m.status === "Voted").length;
   const waitingCount = members.filter(m => m.status === "Waiting").length;
+  const allVoted = votedCount === members.length;
 
   const toggleVote = (name: string) => {
     setMembers(prev => prev.map(m =>
@@ -64,6 +68,22 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
         ? { ...m, status: m.status === "Voted" ? "Waiting" : "Voted" }
         : m
     ));
+  };
+
+  const toggleItemVote = (itemId: number, direction: 'up' | 'down') => {
+    setItemVotes(prev => ({
+      ...prev,
+      [itemId]: prev[itemId] === direction ? null : direction,
+    }));
+  };
+
+  // Simulated final results (for reveal state)
+  const getItemResult = (item: typeof votingItems[0]) => {
+    const ups = item.id === 2 ? 1 : 3; // simulate: most approved, "Skip Sagrada" rejected
+    const downs = item.id === 2 ? 3 : 1;
+    if (ups > downs) return "approved";
+    if (downs > ups) return "rejected";
+    return "tied";
   };
 
   return (
@@ -88,14 +108,16 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
       </div>
 
       {/* Title */}
-      <div className="text-center mb-8">
-        <h2 className="text-[26px] mb-3 font-semibold tracking-tight leading-tight text-zinc-900 dark:text-white">
-          Votes hidden until<br />everyone's in.
-        </h2>
-        <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">
-          No awkward "who's actually coming?" energy.
-        </p>
-      </div>
+      {!allVoted && (
+        <div className="text-center mb-8">
+          <h2 className="text-[26px] mb-3 font-semibold tracking-tight leading-tight text-zinc-900 dark:text-white">
+            Votes hidden until<br />everyone's in.
+          </h2>
+          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">
+            No awkward "who's actually coming?" energy.
+          </p>
+        </div>
+      )}
 
       {/* Progress */}
       <div className="mb-6">
@@ -172,6 +194,120 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
           </div>
           <div className="text-yellow-600 dark:text-yellow-500 font-bold">→</div>
         </button>
+      )}
+
+      {/* Vote Items Section */}
+      {!allVoted && (
+        <div className="mt-8">
+          <div className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-4 px-1">
+            PROPOSED ACTIVITIES
+          </div>
+          {votingItems.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800 mb-3"
+            >
+              <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100 mb-1">
+                {item.title}
+              </div>
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-2">
+                {item.location} {item.city}
+              </div>
+              <p className="text-[15px] text-zinc-500 dark:text-zinc-400 mb-4 leading-relaxed">
+                {item.description}
+              </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleItemVote(item.id, 'up')}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border transition-all ${
+                      itemVotes[item.id] === 'up'
+                        ? 'bg-teal-50 dark:bg-teal-900/30 border-teal-200 dark:border-teal-800/50 text-teal-600 dark:text-teal-400'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 hover:bg-teal-50 dark:hover:bg-teal-900/20'
+                    }`}
+                  >
+                    <ThumbsUp className="w-4 h-4" strokeWidth={2.5} />
+                    <span className="text-xs font-bold">Yes</span>
+                  </button>
+                  <button
+                    onClick={() => toggleItemVote(item.id, 'down')}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border transition-all ${
+                      itemVotes[item.id] === 'down'
+                        ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    }`}
+                  >
+                    <ThumbsDown className="w-4 h-4" strokeWidth={2.5} />
+                    <span className="text-xs font-bold">No</span>
+                  </button>
+                </div>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
+                  {item.votedCount}/{item.totalCount} voted
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Reveal State */}
+      {allVoted && (
+        <div className="mt-8" style={{ animation: 'scaleIn 0.4s ease-out' }}>
+          <style>{`
+            @keyframes scaleIn {
+              0% { opacity: 0; transform: scale(0.92); }
+              100% { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
+          <div className="text-center mb-6">
+            <div className="text-[26px] font-semibold tracking-tight text-zinc-900 dark:text-white mb-1">
+              Results are in! <Sparkles className="inline w-6 h-6 text-yellow-500" />
+            </div>
+            <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">
+              Everyone voted — here's the verdict.
+            </p>
+          </div>
+          <div className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-4 px-1">
+            FINAL RESULTS
+          </div>
+          {votingItems.map((item) => {
+            const result = getItemResult(item);
+            return (
+              <div
+                key={item.id}
+                className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800 mb-3"
+                style={{ animation: `scaleIn 0.4s ease-out ${item.id * 0.08}s both` }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100">
+                    {item.title}
+                  </div>
+                  {result === "approved" && (
+                    <span className="text-[11px] font-bold tracking-wide bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 px-3 py-1.5 rounded-lg border border-teal-100/80 dark:border-teal-800/50">
+                      APPROVED
+                    </span>
+                  )}
+                  {result === "rejected" && (
+                    <span className="text-[11px] font-bold tracking-wide bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg border border-red-100/80 dark:border-red-800/50">
+                      REJECTED
+                    </span>
+                  )}
+                  {result === "tied" && (
+                    <span className="text-[11px] font-bold tracking-wide bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-lg border border-amber-100/80 dark:border-amber-800/50">
+                      TIED
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-2">
+                  {item.location} {item.city}
+                </div>
+                <p className="text-[15px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* Info */}

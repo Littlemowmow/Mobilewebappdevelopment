@@ -1,4 +1,4 @@
-import { Filter, MapPin, Star, X, Heart } from "lucide-react";
+import { Filter, MapPin, Star, X, Heart, Plane } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useState, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useTransform, PanInfo } from "motion/react";
@@ -99,6 +99,16 @@ export function Discover() {
     return () => { cancelled = true; };
   }, []);
 
+  // Auto-select first trip city when activeTrip changes
+  useEffect(() => {
+    if (activeTrip && activeTrip.cities.length > 0) {
+      setActiveCity(activeTrip.cities[0].name);
+      setCurrentIndex(0);
+      setIntensity(0);
+      sliderX.set(0);
+    }
+  }, [activeTrip, sliderX]);
+
   // Derive unique cities from fetched places
   const derivedCities = Array.from(
     new Set(
@@ -198,6 +208,16 @@ export function Discover() {
         </button>
       </div>
 
+      {/* Trip Mode Banner */}
+      {activeTrip && (
+        <button className="w-full bg-orange-500/10 border border-orange-500/30 rounded-2xl px-4 py-3 mb-4 flex items-center gap-2 text-left transition-colors hover:bg-orange-500/15">
+          <Plane className="w-4 h-4 text-orange-500 shrink-0" />
+          <span className="text-[14px] font-medium text-orange-600 dark:text-orange-400">
+            Proposing for {activeTrip.name}
+          </span>
+        </button>
+      )}
+
       {/* City Pills */}
       <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-hide">
         {cities.map((city) => (
@@ -258,9 +278,17 @@ export function Discover() {
         ) : (
           <div className="h-full flex items-center justify-center">
             <div className="text-center px-8">
-              <div className="text-6xl mb-4">✨</div>
-              <h3 className="text-xl text-zinc-900 dark:text-white mb-2">All Caught Up!</h3>
-              <p className="text-zinc-500 dark:text-zinc-400 text-[15px]">Check back later for more recommendations</p>
+              <div className="text-6xl mb-4">{activeTrip && activeCityName ? "🗺️" : "✨"}</div>
+              <h3 className="text-xl text-zinc-900 dark:text-white mb-2">
+                {activeTrip && activeCityName
+                  ? `You've seen everything in ${activeCityName}`
+                  : "All Caught Up!"}
+              </h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[15px]">
+                {activeTrip && activeCityName
+                  ? "Try another city or check back later"
+                  : "Check back later for more recommendations"}
+              </p>
             </div>
           </div>
         )}

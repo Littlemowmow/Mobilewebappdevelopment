@@ -1,18 +1,67 @@
 import { Plus, ChevronRight, Users, Bookmark, MapPin } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
-import { useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../../lib/supabase";
+import { useEffect, useRef, useState } from "react";
 
 export function Trips() {
-  const { activeTrip, setActiveTrip, trips } = useTrip();
+  const { activeTrip, setActiveTrip, trips, loadTrips } = useTrip();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const hasAutoNavigated = useRef(false);
 
-  // Clear active trip when viewing the trips list
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [joining, setJoining] = useState(false);
+
+  // Auto-navigate to active trip on first render
   useEffect(() => {
-    if (activeTrip) {
-      setActiveTrip(null);
+    if (hasAutoNavigated.current) return;
+    const active = trips.find(t => t.status === "Active");
+    if (active) {
+      hasAutoNavigated.current = true;
+      navigate(`/trips/${active.id}`);
     }
-  }, []);
+  }, [trips, navigate]);
+
+  const handleJoinTrip = async () => {
+    const code = joinCode.trim().toUpperCase();
+    if (!code) return;
+    if (!user) {
+      setJoinError("You must be logged in");
+      return;
+    }
+    setJoining(true);
+    setJoinError("");
+
+    const { data: trip, error: findError } = await supabase
+      .from("trips")
+      .select("*")
+      .eq("invite_code", code)
+      .single();
+
+    if (findError || !trip) {
+      setJoinError("Trip not found");
+      setJoining(false);
+      return;
+    }
+
+    const { error: joinErr } = await supabase
+      .from("trip_members")
+      .insert({ trip_id: trip.id, user_id: user.id, role: "member" });
+
+    if (joinErr) {
+      setJoinError(joinErr.message);
+      setJoining(false);
+      return;
+    }
+
+    await loadTrips();
+    setJoining(false);
+    setJoinCode("");
+    navigate(`/trips/${trip.id}`);
+  };
 
   const activeTrips = trips.filter(t => t.status === "Active");
   const completedTrips = trips.filter(t => t.status === "Completed");
@@ -33,6 +82,28 @@ export function Trips() {
           <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
         </Link>
       </div>
+
+      {/* Join Trip */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mb-5 flex gap-3 items-center">
+        <input
+          type="text"
+          placeholder="Enter trip code"
+          value={joinCode}
+          onChange={(e) => { setJoinCode(e.target.value); setJoinError(""); }}
+          onKeyDown={(e) => { if (e.key === "Enter") handleJoinTrip(); }}
+          className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+        />
+        <button
+          onClick={handleJoinTrip}
+          disabled={joining}
+          className="bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md shadow-orange-600/20 disabled:opacity-50"
+        >
+          {joining ? "Joining..." : "Join"}
+        </button>
+      </div>
+      {joinError && (
+        <p className="text-red-500 text-sm font-medium -mt-3 mb-4 px-1">{joinError}</p>
+      )}
 
       {/* Active Trips */}
       {activeTrips.length > 0 && (
