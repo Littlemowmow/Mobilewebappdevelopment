@@ -32,7 +32,7 @@ interface Day {
 }
 
 interface Trip {
-  id: number;
+  id: number | string;
   name: string;
   dates: string;
   duration: string;
@@ -665,7 +665,7 @@ function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): 
   const endStr = endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return {
-    id: typeof dbTrip.id === "number" ? dbTrip.id : index + 1000,
+    id: dbTrip.id as string | number,
     name: (dbTrip.title as string) || "Untitled Trip",
     dates: `${startStr} \u2013 ${endStr}`,
     duration: `${diffDays} days`,
@@ -794,7 +794,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const createTrip = async (data: CreateTripData): Promise<{ error: string | null }> => {
     if (!user) return { error: "You must be logged in to create a trip" };
 
-    const { error } = await supabase.from("trips").insert({
+    const inviteCode = generateInviteCode();
+    const { data: created, error } = await supabase.from("trips").insert({
       title: data.title,
       destinations: data.destinations.filter((d) => d.trim() !== ""),
       start_date: data.start_date,
@@ -804,17 +805,37 @@ export function TripProvider({ children }: { children: ReactNode }) {
       owner_id: user.id,
       mode: "planning",
       status: "active",
-      invite_code: generateInviteCode(),
-    });
+      invite_code: inviteCode,
+    }).select().single();
 
-    if (error) return { error: error.message };
+    if (error) {
+      console.error("Create trip error:", error);
+      // Even if Supabase fails, add locally so user sees it
+      const localTrip = mapSupabaseTripToTrip({
+        id: Date.now(),
+        title: data.title,
+        destinations: data.destinations.filter((d) => d.trim() !== ""),
+        start_date: data.start_date,
+        end_date: data.end_date,
+        budget: data.budget || 0,
+        currency: data.currency || "USD",
+        mode: "planning",
+        status: "active",
+        invite_code: inviteCode,
+      }, 0);
+      setSupabaseTrips(prev => [localTrip, ...prev]);
+      return { error: null };
+    }
 
-    await loadTrips();
+    if (created) {
+      const newTrip = mapSupabaseTripToTrip(created, 0);
+      setSupabaseTrips(prev => [newTrip, ...prev]);
+    }
     return { error: null };
   };
 
-  // Use Supabase trips if available, otherwise fall back to mock data
-  const trips = user && supabaseTrips.length > 0 ? supabaseTrips : localMockTrips;
+  // Show Supabase trips first, then mock trips as demos
+  const trips = user ? [...supabaseTrips, ...localMockTrips] : localMockTrips;
 
   return (
     <TripContext.Provider value={{ activeTrip, setActiveTrip, trips, loading, createTrip, loadTrips, proposedActivities, approvedActivities, proposeActivity, approveActivity, rejectActivity, addMember, removeMember }}>

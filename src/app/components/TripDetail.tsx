@@ -24,7 +24,7 @@ export function TripDetail() {
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberColor, setNewMemberColor] = useState(MEMBER_COLOR_OPTIONS[0].value);
 
-  const trip = trips.find(t => t.id === Number(tripId));
+  const trip = trips.find(t => String(t.id) === String(tripId));
 
   // Set this as active trip when viewing
   useEffect(() => {
