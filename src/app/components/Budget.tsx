@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, ArrowLeft, Plus, X, Check } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowLeft, Plus, X, Check, Lock, Unlock, Shield } from "lucide-react";
 import { useTrip } from "../context/TripContext";
 import { useBudget } from "../context/BudgetContext";
 import { Link } from "react-router";
@@ -38,9 +38,31 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const { activeTrip, setActiveTrip } = useTrip();
   const { budgetData } = useBudget();
   const [selectedCity, setSelectedCity] = useState("All");
-  const [activeSubTab, setActiveSubTab] = useState<"budget" | "settle">("budget");
+  const [activeSubTab, setActiveSubTab] = useState<"fund" | "budget" | "settle">("fund");
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
+
+  // Budget Lock / Trip Fund state
+  const requiredExpenses = [
+    { category: "Accommodation", emoji: "🏨", perPerson: 200, total: 800, description: "Airbnb (4 nights split)" },
+    { category: "Flights", emoji: "✈️", perPerson: 350, total: 1400, description: "Round-trip flights" },
+    { category: "Transportation", emoji: "🚆", perPerson: 85, total: 340, description: "Trains between cities" },
+  ];
+  const totalRequiredPerPerson = requiredExpenses.reduce((sum, e) => sum + e.perPerson, 0);
+  const totalRequired = requiredExpenses.reduce((sum, e) => sum + e.total, 0);
+
+  const [memberCommitments, setMemberCommitments] = useState<Record<string, boolean>>({
+    Helena: true,
+    Sara: true,
+    Zara: false,
+    Alex: false,
+  });
+  const committedCount = Object.values(memberCommitments).filter(Boolean).length;
+  const allCommitted = committedCount === MEMBERS.length;
+
+  const toggleMyCommitment = () => {
+    setMemberCommitments(prev => ({ ...prev, Helena: !prev.Helena }));
+  };
 
   // Form state
   const [formTitle, setFormTitle] = useState("");
@@ -221,26 +243,169 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
       {/* Tabs */}
       <div className="flex gap-2 mb-5 p-1 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm dark:shadow-none border border-zinc-200 dark:border-transparent">
         <button
+          onClick={() => setActiveSubTab("fund")}
+          className={`flex-1 py-3 rounded-xl text-[15px] transition-all ${
+            activeSubTab === "fund"
+              ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md font-semibold"
+              : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium"
+          }`}
+        >
+          Fund
+        </button>
+        <button
           onClick={() => setActiveSubTab("budget")}
-          className={`flex-1 py-3 rounded-xl text-[15px] font-semibold transition-all ${
+          className={`flex-1 py-3 rounded-xl text-[15px] transition-all ${
             activeSubTab === "budget"
-              ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md"
-              : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md font-semibold"
+              : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium"
           }`}
         >
           Budget
         </button>
         <button
           onClick={() => setActiveSubTab("settle")}
-          className={`flex-1 py-3 rounded-xl text-[15px] font-medium transition-all ${
+          className={`flex-1 py-3 rounded-xl text-[15px] transition-all ${
             activeSubTab === "settle"
               ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md font-semibold"
-              : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium"
           }`}
         >
           Settle Up
         </button>
       </div>
+
+      {/* ===== FUND VIEW (Budget Lock) ===== */}
+      {activeSubTab === "fund" && (
+        <>
+          {/* Lock Status Card */}
+          <div className={`rounded-[28px] p-8 mb-5 shadow-lg border ${allCommitted ? "bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/40 dark:to-teal-900/20 border-teal-200/50 dark:border-teal-800/50" : "bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 border-zinc-200/50 dark:border-zinc-800"}`}>
+            <div className="flex items-center justify-center mb-4">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${allCommitted ? "bg-teal-100 dark:bg-teal-500/20 border border-teal-200 dark:border-teal-500/30" : "bg-orange-100 dark:bg-orange-500/20 border border-orange-200 dark:border-orange-500/30"}`}>
+                {allCommitted ? <Lock className="w-8 h-8 text-teal-600 dark:text-teal-400" /> : <Unlock className="w-8 h-8 text-orange-600 dark:text-orange-400" />}
+              </div>
+            </div>
+            <div className="text-center mb-6">
+              <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-2 tracking-widest font-bold">
+                {allCommitted ? "TRIP FUNDED" : "TRIP FUND"}
+              </div>
+              <div className="text-4xl mb-2 font-bold text-zinc-900 dark:text-white">
+                ${totalRequiredPerPerson}
+              </div>
+              <div className="text-[15px] text-zinc-500 dark:text-zinc-400 font-medium">
+                required per person
+              </div>
+            </div>
+
+            {/* Progress */}
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium">{committedCount} of {MEMBERS.length} locked in</span>
+                <span className={`font-semibold ${allCommitted ? "text-teal-600 dark:text-teal-400" : "text-orange-600 dark:text-orange-400"}`}>{Math.round((committedCount / MEMBERS.length) * 100)}%</span>
+              </div>
+              <div className="h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ${allCommitted ? "bg-gradient-to-r from-teal-500 to-teal-600" : "bg-gradient-to-r from-orange-500 to-orange-600"}`} style={{ width: `${(committedCount / MEMBERS.length) * 100}%` }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Required Expenses */}
+          <div className="mb-5">
+            <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Required Expenses</h3>
+            <div className="space-y-3">
+              {requiredExpenses.map((expense) => (
+                <div key={expense.category} className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xl border border-zinc-200/50 dark:border-zinc-700">{expense.emoji}</div>
+                      <div>
+                        <div className="text-[15px] font-semibold text-zinc-900 dark:text-zinc-100">{expense.category}</div>
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400">{expense.description}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[15px] font-bold text-zinc-900 dark:text-zinc-100">${expense.perPerson}</div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-500 font-medium">per person</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-4 text-center border border-zinc-200/50 dark:border-zinc-800">
+              <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Total pool: </span>
+              <span className="text-zinc-900 dark:text-white text-sm font-bold">${totalRequired}</span>
+              <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium"> (${totalRequiredPerPerson} × {MEMBERS.length} people)</span>
+            </div>
+          </div>
+
+          {/* Member Commitments */}
+          <div className="mb-5">
+            <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Member Status</h3>
+            <div className="bg-white dark:bg-zinc-950 rounded-[28px] p-6 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
+              <div className="space-y-4">
+                {MEMBERS.map((member) => {
+                  const isCommitted = memberCommitments[member];
+                  const isYou = member === "Helena";
+                  return (
+                    <div key={member} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3.5">
+                        <div className={`w-12 h-12 rounded-2xl ${MEMBER_COLORS[member]} flex items-center justify-center text-white shadow-lg border-2 border-white dark:border-zinc-950`}>
+                          <span className="text-lg font-bold">{member.charAt(0)}</span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100">
+                            {member} {isYou && <span className="text-zinc-500 dark:text-zinc-500 font-normal">(You)</span>}
+                          </div>
+                          <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                            ${totalRequiredPerPerson} required
+                          </div>
+                        </div>
+                      </div>
+                      {isCommitted ? (
+                        <div className="flex items-center gap-2 bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-xl border border-teal-100/80 dark:border-teal-800/50">
+                          <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400" strokeWidth={2.5} />
+                          <span className="text-xs font-bold text-teal-600 dark:text-teal-400 tracking-wide">LOCKED IN</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 rounded-xl border border-zinc-200/80 dark:border-zinc-800">
+                          <Unlock className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+                          <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 tracking-wide">PENDING</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Your Commitment CTA */}
+          {!memberCommitments["Helena"] ? (
+            <button
+              onClick={toggleMyCommitment}
+              className="w-full bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-4 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30 flex items-center justify-center gap-2"
+            >
+              <Lock className="w-5 h-5" />
+              Lock In ${totalRequiredPerPerson}
+            </button>
+          ) : (
+            <button
+              onClick={toggleMyCommitment}
+              className="w-full bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/40 dark:to-teal-900/40 border-2 border-teal-200 dark:border-teal-800/50 text-teal-600 dark:text-teal-400 py-4 rounded-2xl text-[15px] font-semibold transition-all flex items-center justify-center gap-2"
+            >
+              <Check className="w-5 h-5" />
+              You&apos;re Locked In — ${totalRequiredPerPerson}
+            </button>
+          )}
+
+          {/* Info */}
+          <div className="mt-6 p-5 bg-white dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-[20px] shadow-sm dark:shadow-none">
+            <h4 className="text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">How Budget Lock works</h4>
+            <p className="text-sm text-zinc-600 dark:text-zinc-500 leading-relaxed">
+              The trip creator sets required shared expenses. Each member locks in their commitment before the trip. Once everyone&apos;s locked in, the fund is secured — no one can back out of basic expenses without the group owner&apos;s permission.
+            </p>
+          </div>
+        </>
+      )}
 
       {/* ===== BUDGET VIEW ===== */}
       {activeSubTab === "budget" && (
