@@ -3,6 +3,12 @@ import { useNavigate } from "react-router"
 import { useAuth } from "../context/AuthContext"
 import { Globe, Eye, EyeOff } from "lucide-react"
 
+function mapAuthError(message: string): string {
+  if (message.includes("Invalid login credentials")) return "Wrong email or password"
+  if (message.includes("User already registered")) return "Account already exists — try signing in"
+  return message
+}
+
 export function Login() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState("")
@@ -24,7 +30,7 @@ export function Login() {
       : await signIn(email, password)
 
     if (result.error) {
-      setError(result.error)
+      setError(mapAuthError(result.error))
       setLoading(false)
     } else {
       navigate("/")

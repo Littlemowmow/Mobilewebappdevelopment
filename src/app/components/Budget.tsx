@@ -34,9 +34,9 @@ interface LocalExpense {
   splitWith?: string[];
 }
 
-const MEMBERS = ["Helena", "Sara", "Zara", "Alex"];
-
-const MEMBER_COLORS: Record<string, string> = {
+// Fallback members used only when no active trip is available
+const FALLBACK_MEMBERS = ["Helena", "Sara", "Zara", "Alex"];
+const FALLBACK_MEMBER_COLORS: Record<string, string> = {
   Helena: "bg-orange-500",
   Sara: "bg-teal-500",
   Zara: "bg-pink-500",
@@ -58,6 +58,25 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [activeSubTab, setActiveSubTab] = useState<"fund" | "budget" | "settle">("fund");
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
+
+  // Derive members from active trip context, fall back to defaults
+  const MEMBERS = useMemo(() => {
+    if (activeTrip && activeTrip.memberInitials.length > 0) {
+      return activeTrip.memberInitials;
+    }
+    return FALLBACK_MEMBERS;
+  }, [activeTrip]);
+
+  const MEMBER_COLORS: Record<string, string> = useMemo(() => {
+    if (activeTrip && activeTrip.memberInitials.length > 0) {
+      const colors: Record<string, string> = {};
+      activeTrip.memberInitials.forEach((initial, i) => {
+        colors[initial] = activeTrip.memberColors[i] || "bg-orange-500";
+      });
+      return colors;
+    }
+    return FALLBACK_MEMBER_COLORS;
+  }, [activeTrip]);
 
   // Budget Lock / Trip Fund state
   const [requiredExpenses, setRequiredExpenses] = useState<RequiredExpense[]>([
@@ -88,17 +107,17 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     () => Object.fromEntries(budgetData.categories.map((c) => [c.category, String(c.budget)]))
   );
 
-  const [memberCommitments, setMemberCommitments] = useState<Record<string, boolean>>({
-    Helena: true,
-    Sara: true,
-    Zara: false,
-    Alex: false,
+  const [memberCommitments, setMemberCommitments] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    MEMBERS.forEach((m, i) => { initial[m] = i === 0; }); // Only current user (first member) committed by default
+    return initial;
   });
-  const committedCount = Object.values(memberCommitments).filter(Boolean).length;
+  const committedCount = MEMBERS.filter(m => memberCommitments[m]).length;
   const allCommitted = committedCount === MEMBERS.length;
 
   const toggleMyCommitment = () => {
-    setMemberCommitments(prev => ({ ...prev, Helena: !prev.Helena }));
+    const me = MEMBERS[0];
+    setMemberCommitments(prev => ({ ...prev, [me]: !prev[me] }));
   };
 
   // Form state
@@ -106,7 +125,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [formAmount, setFormAmount] = useState("");
   const [formCategory, setFormCategory] = useState("Food & Drinks");
   const [formCity, setFormCity] = useState("Barcelona");
-  const [formPaidBy, setFormPaidBy] = useState("Helena");
+  const [formPaidBy, setFormPaidBy] = useState(MEMBERS[0]);
   const [formSplitWith, setFormSplitWith] = useState<string[]>([...MEMBERS]);
 
   // Combine context transactions with local expenses
@@ -227,7 +246,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     setFormAmount("");
     setFormCategory("Food & Drinks");
     setFormCity("Barcelona");
-    setFormPaidBy("Helena");
+    setFormPaidBy(MEMBERS[0]);
     setFormSplitWith([...MEMBERS]);
   }
 
@@ -757,6 +776,13 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
           {/* Recent Transactions */}
           <div>
             <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Recent Transactions</h3>
+            {filteredTransactions.length === 0 ? (
+              <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-8 shadow-md border border-zinc-200/50 dark:border-zinc-800 text-center">
+                <div className="text-4xl mb-3">🧾</div>
+                <h4 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-1">No expenses logged yet</h4>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Tap + to add your first expense</p>
+              </div>
+            ) : (
             <div className="space-y-2">
               {filteredTransactions.map((transaction) => (
                 <div
@@ -798,6 +824,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                 </div>
               ))}
             </div>
+            )}
           </div>
         </>
       )}

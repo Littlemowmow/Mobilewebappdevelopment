@@ -704,6 +704,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [proposedActivities, setProposedActivities] = useState<ProposedActivity[]>([]);
   const [localMockTrips, setLocalMockTrips] = useState<Trip[]>(mockTrips);
+  const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const { user } = useAuth();
 
   const proposeActivity = useCallback((activity: Omit<ProposedActivity, "status">) => {
@@ -810,57 +811,63 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
   const createTrip = async (data: CreateTripData): Promise<{ error: string | null; tripId?: string | number }> => {
     if (!user) return { error: "You must be logged in to create a trip" };
+    if (isCreatingTrip) return { error: "Already creating a trip, please wait..." };
 
-    const inviteCode = generateInviteCode();
-    // Encode days per city into destinations as "CityName:Days" format
-    const filteredDests = data.destinations.filter((d) => d.trim() !== "");
-    const encodedDests = filteredDests.map((dest, i) => {
-      const days = data.daysPerCity?.[i] || 2;
-      return `${dest.trim()}:${days}`;
-    });
-    const { data: created, error } = await supabase.from("trips").insert({
-      title: data.title,
-      destinations: encodedDests,
-      start_date: data.start_date,
-      end_date: data.end_date,
-      budget: data.budget || 0,
-      currency: data.currency || "USD",
-      owner_id: user.id,
-      mode: "planning",
-      status: "active",
-      invite_code: inviteCode,
-    }).select().single();
-
-    if (error) {
-      console.error("Create trip error:", error);
-      // Even if Supabase fails, add locally so user sees it
-      const localId = Date.now();
-      const localTrip = mapSupabaseTripToTrip({
-        id: localId,
+    setIsCreatingTrip(true);
+    try {
+      const inviteCode = generateInviteCode();
+      // Encode days per city into destinations as "CityName:Days" format
+      const filteredDests = data.destinations.filter((d) => d.trim() !== "");
+      const encodedDests = filteredDests.map((dest, i) => {
+        const days = data.daysPerCity?.[i] || 2;
+        return `${dest.trim()}:${days}`;
+      });
+      const { data: created, error } = await supabase.from("trips").insert({
         title: data.title,
         destinations: encodedDests,
         start_date: data.start_date,
         end_date: data.end_date,
         budget: data.budget || 0,
         currency: data.currency || "USD",
+        owner_id: user.id,
         mode: "planning",
         status: "active",
         invite_code: inviteCode,
-      }, 0);
-      setSupabaseTrips(prev => [localTrip, ...prev]);
-      return { error: null, tripId: localId };
-    }
+      }).select().single();
 
-    if (created) {
-      const newTrip = mapSupabaseTripToTrip(created, 0);
-      setSupabaseTrips(prev => [newTrip, ...prev]);
-      return { error: null, tripId: created.id };
+      if (error) {
+        console.error("Create trip error:", error);
+        // Even if Supabase fails, add locally so user sees it
+        const localId = Date.now();
+        const localTrip = mapSupabaseTripToTrip({
+          id: localId,
+          title: data.title,
+          destinations: encodedDests,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          budget: data.budget || 0,
+          currency: data.currency || "USD",
+          mode: "planning",
+          status: "active",
+          invite_code: inviteCode,
+        }, 0);
+        setSupabaseTrips(prev => [localTrip, ...prev]);
+        return { error: null, tripId: localId };
+      }
+
+      if (created) {
+        const newTrip = mapSupabaseTripToTrip(created, 0);
+        setSupabaseTrips(prev => [newTrip, ...prev]);
+        return { error: null, tripId: created.id };
+      }
+      return { error: null };
+    } finally {
+      setIsCreatingTrip(false);
     }
-    return { error: null };
   };
 
-  // Show Supabase trips first, then mock trips as demos
-  const trips = user ? [...supabaseTrips, ...localMockTrips] : localMockTrips;
+  // Logged-in users see only their own trips; mock data is only for demo when not logged in
+  const trips = user ? supabaseTrips : localMockTrips;
 
   return (
     <TripContext.Provider value={{ activeTrip, setActiveTrip, trips, loading, createTrip, loadTrips, proposedActivities, approvedActivities, proposeActivity, approveActivity, rejectActivity, addMember, removeMember }}>

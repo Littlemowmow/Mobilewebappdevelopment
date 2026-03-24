@@ -40,10 +40,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id)
+    let didTimeout = false
+    const timeout = setTimeout(() => {
+      didTimeout = true
       setLoading(false)
+    }, 8000)
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeout)
+      if (!didTimeout) {
+        setUser(session?.user ?? null)
+        if (session?.user) loadProfile(session.user.id)
+        setLoading(false)
+      } else {
+        // Timeout already fired, but session came through — still update user
+        setUser(session?.user ?? null)
+        if (session?.user) loadProfile(session.user.id)
+      }
+    }).catch(() => {
+      clearTimeout(timeout)
+      if (!didTimeout) setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -55,7 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {

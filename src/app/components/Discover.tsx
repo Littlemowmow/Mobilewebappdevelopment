@@ -67,6 +67,7 @@ export function Discover() {
   const { user } = useAuth();
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [intensity, setIntensity] = useState(0);
   const [activeCity, setActiveCity] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export function Discover() {
 
     async function fetchActivities() {
       setLoading(true);
+      setFetchError(false);
       const { data, error } = await supabase
         .from("activities")
         .select("*")
@@ -88,6 +90,7 @@ export function Discover() {
         if (error) {
           console.error("Failed to fetch activities:", error);
           setPlaces([]);
+          setFetchError(true);
         } else {
           setPlaces((data || []).map(mapActivityToPlace));
         }
@@ -97,6 +100,25 @@ export function Discover() {
 
     fetchActivities();
     return () => { cancelled = true; };
+  }, []);
+
+  const refetchActivities = useCallback(async () => {
+    setLoading(true);
+    setFetchError(false);
+    const { data, error } = await supabase
+      .from("activities")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("Failed to fetch activities:", error);
+      setPlaces([]);
+      setFetchError(true);
+    } else {
+      setPlaces((data || []).map(mapActivityToPlace));
+    }
+    setLoading(false);
   }, []);
 
   // Auto-select first trip city when activeTrip changes
@@ -258,6 +280,20 @@ export function Discover() {
             <div className="text-center px-8">
               <div className="w-10 h-10 border-4 border-zinc-300 dark:border-zinc-700 border-t-zinc-900 dark:border-t-white rounded-full animate-spin mx-auto mb-4" />
               <p className="text-zinc-500 dark:text-zinc-400 text-[15px]">Finding adventures...</p>
+            </div>
+          </div>
+        ) : fetchError ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center px-8">
+              <div className="text-5xl mb-4">😕</div>
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">Couldn't load activities</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[14px] mb-5">Something went wrong. Please try again.</p>
+              <button
+                onClick={refetchActivities}
+                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-[15px] font-semibold transition-colors shadow-md"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         ) : remainingCards > 0 && currentPlace ? (

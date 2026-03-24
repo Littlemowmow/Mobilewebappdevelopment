@@ -5,11 +5,15 @@ import { Link } from "react-router";
 import { useState, useMemo } from "react";
 import { useTrip } from "../context/TripContext";
 
-const initialMembers = [
-  { name: "Hadi", initial: "H", status: "Voted", color: "bg-gradient-to-br from-orange-500 to-orange-600", isYou: true },
-  { name: "Sara", initial: "S", status: "Voted", color: "bg-gradient-to-br from-teal-500 to-teal-600", isYou: false },
-  { name: "Zayd", initial: "Z", status: "Waiting", color: "bg-gradient-to-br from-pink-500 to-pink-600", isYou: false },
-  { name: "Alex", initial: "A", status: "Waiting", color: "bg-gradient-to-br from-blue-500 to-blue-600", isYou: false },
+// Convert a bg-color class to a gradient version for member avatars
+function toGradient(bgClass: string): string {
+  const base = bgClass.replace("bg-", "");
+  return `bg-gradient-to-br from-${base} to-${base.replace("500", "600")}`;
+}
+
+const FALLBACK_MEMBERS = [
+  { name: "H", initial: "H", status: "Voted", color: "bg-gradient-to-br from-orange-500 to-orange-600", isYou: true },
+  { name: "S", initial: "S", status: "Waiting", color: "bg-gradient-to-br from-teal-500 to-teal-600", isYou: false },
 ];
 
 const votingItems = [

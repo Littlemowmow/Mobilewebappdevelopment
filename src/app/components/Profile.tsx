@@ -6,13 +6,19 @@ import { useNavigate } from "react-router";
 
 export function Profile() {
   const { theme, toggleTheme } = useTheme();
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { trips } = useTrip();
   const navigate = useNavigate();
 
-  const displayName = profile?.display_name || profile?.name || "User";
-  const displayEmail = profile?.email || "—";
-  const displayInitial = displayName.charAt(0).toUpperCase();
+  const emailPrefix = user?.email ? user.email.split("@")[0] : "";
+  const displayName = profile?.display_name || profile?.name || emailPrefix || "User";
+  const displayEmail = profile?.email || user?.email || "—";
+  const displayInitial = displayName.charAt(0).toUpperCase() || (emailPrefix ? emailPrefix.charAt(0).toUpperCase() : "?");
+
+  // Derive real stats from trips
+  const uniqueCities = new Set(trips.flatMap(t => t.cities.map(c => c.name)));
+  const cityCount = uniqueCities.size;
+  const placesCount = 0; // Will show real count when saved activities are available
 
   const handleLogOut = async () => {
     await signOut();
@@ -51,14 +57,14 @@ export function Profile() {
           <div className="w-10 h-10 bg-teal-100 dark:bg-teal-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 border border-teal-200/80 dark:border-teal-500/30">
             <Award className="w-5 h-5 text-teal-600 dark:text-teal-400" />
           </div>
-          <div className="text-2xl mb-1 font-bold text-zinc-900 dark:text-white">8</div>
+          <div className="text-2xl mb-1 font-bold text-zinc-900 dark:text-white">{cityCount}</div>
           <div className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Cities</div>
         </div>
         <div className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/40 dark:to-purple-900/40 border border-purple-200/80 dark:border-purple-800/50 rounded-[20px] p-5 text-center shadow-sm dark:shadow-none">
           <div className="w-10 h-10 bg-purple-100 dark:bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 border border-purple-200/80 dark:border-purple-500/30">
             <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
-          <div className="text-2xl mb-1 font-bold text-zinc-900 dark:text-white">24</div>
+          <div className="text-2xl mb-1 font-bold text-zinc-900 dark:text-white">{placesCount}</div>
           <div className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Places</div>
         </div>
       </div>
