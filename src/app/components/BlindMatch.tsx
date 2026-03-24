@@ -2,7 +2,8 @@
 
 import { ArrowLeft, Lightbulb, Check, Clock, ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
 import { Link } from "react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useTrip } from "../context/TripContext";
 
 const initialMembers = [
   { name: "Hadi", initial: "H", status: "Voted", color: "bg-gradient-to-br from-orange-500 to-orange-600", isYou: true },

@@ -63,7 +63,7 @@ function mapActivityToPlace(activity: any): Place {
 }
 
 export function Discover() {
-  const { activeTrip } = useTrip();
+  const { activeTrip, proposeActivity } = useTrip();
   const { user } = useAuth();
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,6 +167,21 @@ export function Discover() {
       const currentPlace = filteredPlaces[currentIndex];
       if (direction === "right" && currentPlace) {
         saveActivity(currentPlace.id);
+        // If there's an active trip, propose this activity for group voting
+        if (activeTrip) {
+          const cityParts = currentPlace.location.split(", ");
+          const city = cityParts[cityParts.length - 1] || "";
+          proposeActivity({
+            id: typeof currentPlace.id === "string" ? parseInt(currentPlace.id, 10) || Date.now() : Number(currentPlace.id),
+            name: currentPlace.name,
+            location: currentPlace.location,
+            city,
+            description: currentPlace.description,
+            tags: currentPlace.tags,
+            price: currentPlace.price,
+            duration: currentPlace.duration,
+          });
+        }
       }
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
@@ -174,7 +189,7 @@ export function Discover() {
         sliderX.set(0);
       }, 300);
     },
-    [currentIndex, filteredPlaces, saveActivity, sliderX]
+    [currentIndex, filteredPlaces, saveActivity, sliderX, activeTrip, proposeActivity]
   );
 
   const handleSliderDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {

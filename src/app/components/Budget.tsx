@@ -1,8 +1,25 @@
-import { TrendingUp, TrendingDown, ArrowLeft, Plus, X, Check, Lock, Unlock, Shield } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowLeft, Plus, X, Check, Lock, Unlock, Shield, Pencil } from "lucide-react";
 import { useTrip } from "../context/TripContext";
 import { useBudget } from "../context/BudgetContext";
 import { Link } from "react-router";
 import { useState, useMemo } from "react";
+
+interface RequiredExpense {
+  category: string;
+  emoji: string;
+  perPerson: number;
+  total: number;
+  description: string;
+}
+
+const REQUIRED_EXPENSE_CATEGORIES = [
+  { value: "Accommodation", emoji: "🏨" },
+  { value: "Flights", emoji: "✈️" },
+  { value: "Transportation", emoji: "🚆" },
+  { value: "Food", emoji: "🍽️" },
+  { value: "Activities", emoji: "🎭" },
+  { value: "Other", emoji: "📦" },
+];
 
 interface LocalExpense {
   id: number;
@@ -43,13 +60,33 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
 
   // Budget Lock / Trip Fund state
-  const requiredExpenses = [
+  const [requiredExpenses, setRequiredExpenses] = useState<RequiredExpense[]>([
     { category: "Accommodation", emoji: "🏨", perPerson: 200, total: 800, description: "Airbnb (4 nights split)" },
     { category: "Flights", emoji: "✈️", perPerson: 350, total: 1400, description: "Round-trip flights" },
     { category: "Transportation", emoji: "🚆", perPerson: 85, total: 340, description: "Trains between cities" },
-  ];
+  ]);
   const totalRequiredPerPerson = requiredExpenses.reduce((sum, e) => sum + e.perPerson, 0);
   const totalRequired = requiredExpenses.reduce((sum, e) => sum + e.total, 0);
+
+  // Add required expense form state
+  const [showAddRequired, setShowAddRequired] = useState(false);
+  const [reqCategory, setReqCategory] = useState("Accommodation");
+  const [reqDescription, setReqDescription] = useState("");
+  const [reqAmount, setReqAmount] = useState("");
+
+  // Editable total budget
+  const [totalBudget, setTotalBudget] = useState(budgetData.total);
+  const [editingTotalBudget, setEditingTotalBudget] = useState(false);
+  const [totalBudgetDraft, setTotalBudgetDraft] = useState(String(budgetData.total));
+
+  // Editable category budgets
+  const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>(
+    () => Object.fromEntries(budgetData.categories.map((c) => [c.category, c.budget]))
+  );
+  const [editingCategoryBudgets, setEditingCategoryBudgets] = useState(false);
+  const [categoryBudgetDrafts, setCategoryBudgetDrafts] = useState<Record<string, string>>(
+    () => Object.fromEntries(budgetData.categories.map((c) => [c.category, String(c.budget)]))
+  );
 
   const [memberCommitments, setMemberCommitments] = useState<Record<string, boolean>>({
     Helena: true,
@@ -92,9 +129,10 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     }
     return budgetData.categories.map((cat) => ({
       ...cat,
+      budget: categoryBudgets[cat.category] ?? cat.budget,
       spent: cat.spent + (extraByCategory[cat.category] || 0),
     }));
-  }, [budgetData.categories, localExpenses]);
+  }, [budgetData.categories, localExpenses, categoryBudgets]);
 
   // Recompute destination totals including local expenses
   const adjustedDestinations = useMemo(() => {
@@ -175,8 +213,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     );
   }
 
-  const percentSpent = Math.round((totalSpent / budgetData.total) * 100);
-  const remaining = budgetData.total - totalSpent;
+  const percentSpent = Math.round((totalSpent / totalBudget) * 100);
+  const remaining = totalBudget - totalSpent;
   const isOverBudget = percentSpent > 100;
 
   // Filter transactions by city
@@ -310,10 +348,18 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
 
           {/* Required Expenses */}
           <div className="mb-5">
-            <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Required Expenses</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Required Expenses</h3>
+              <button
+                onClick={() => setShowAddRequired(true)}
+                className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+              </button>
+            </div>
             <div className="space-y-3">
-              {requiredExpenses.map((expense) => (
-                <div key={expense.category} className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800">
+              {requiredExpenses.map((expense, idx) => (
+                <div key={`${expense.category}-${idx}`} className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xl border border-zinc-200/50 dark:border-zinc-700">{expense.emoji}</div>
@@ -322,13 +368,87 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                         <div className="text-xs text-zinc-500 dark:text-zinc-400">{expense.description}</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-[15px] font-bold text-zinc-900 dark:text-zinc-100">${expense.perPerson}</div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-500 font-medium">per person</div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <div className="text-[15px] font-bold text-zinc-900 dark:text-zinc-100">${expense.perPerson}</div>
+                        <div className="text-xs text-zinc-500 dark:text-zinc-500 font-medium">per person</div>
+                      </div>
+                      <button
+                        onClick={() => setRequiredExpenses((prev) => prev.filter((_, i) => i !== idx))}
+                        className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group"
+                      >
+                        <X className="w-3 h-3 text-zinc-400 group-hover:text-red-500 dark:text-zinc-500 dark:group-hover:text-red-400" />
+                      </button>
                     </div>
                   </div>
                 </div>
               ))}
+
+              {/* Add Required Expense Inline Form */}
+              {showAddRequired && (
+                <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-orange-200 dark:border-orange-800/50">
+                  <div className="space-y-3">
+                    <select
+                      value={reqCategory}
+                      onChange={(e) => setReqCategory(e.target.value)}
+                      className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-[15px] text-zinc-900 dark:text-white outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-colors appearance-none"
+                    >
+                      {REQUIRED_EXPENSE_CATEGORIES.map((c) => (
+                        <option key={c.value} value={c.value}>{c.emoji} {c.value}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="What's this for?"
+                      value={reqDescription}
+                      onChange={(e) => setReqDescription(e.target.value)}
+                      className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-[15px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
+                    />
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[15px] text-zinc-500 dark:text-zinc-400 font-semibold">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="Per person amount"
+                        value={reqAmount}
+                        onChange={(e) => setReqAmount(e.target.value)}
+                        className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 pl-8 text-[15px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setShowAddRequired(false); setReqCategory("Accommodation"); setReqDescription(""); setReqAmount(""); }}
+                        className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          const amount = parseFloat(reqAmount);
+                          if (!reqDescription.trim() || isNaN(amount) || amount <= 0) return;
+                          const meta = REQUIRED_EXPENSE_CATEGORIES.find((c) => c.value === reqCategory);
+                          setRequiredExpenses((prev) => [...prev, {
+                            category: reqCategory,
+                            emoji: meta?.emoji ?? "📦",
+                            perPerson: amount,
+                            total: amount * MEMBERS.length,
+                            description: reqDescription.trim(),
+                          }]);
+                          setShowAddRequired(false);
+                          setReqCategory("Accommodation");
+                          setReqDescription("");
+                          setReqAmount("");
+                        }}
+                        disabled={!reqDescription.trim() || !reqAmount || parseFloat(reqAmount) <= 0}
+                        className="flex-[2] py-2.5 rounded-xl text-[13px] font-semibold bg-gradient-to-br from-orange-600 to-orange-500 text-white shadow-lg shadow-orange-600/30 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="mt-3 bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-4 text-center border border-zinc-200/50 dark:border-zinc-800">
               <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Total pool: </span>
@@ -442,13 +562,53 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
           {/* Total Trip Card */}
           <div className="bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 text-zinc-900 dark:text-white rounded-[28px] p-8 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
             <div className="text-center mb-6">
-              <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-3 tracking-widest font-bold">TOTAL TRIP</div>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <div className="text-[11px] text-zinc-400 dark:text-zinc-500 tracking-widest font-bold">TOTAL TRIP</div>
+                {!editingTotalBudget && (
+                  <button
+                    onClick={() => { setTotalBudgetDraft(String(totalBudget)); setEditingTotalBudget(true); }}
+                    className="w-6 h-6 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
+                  </button>
+                )}
+              </div>
               <div className="text-6xl mb-3 font-bold bg-gradient-to-br from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-400 bg-clip-text text-transparent">
                 ${totalSpent.toLocaleString()}
               </div>
-              <div className="text-[15px] text-zinc-500 dark:text-zinc-400 font-medium">
-                ${remaining.toLocaleString()} remaining of ${budgetData.total.toLocaleString()}
-              </div>
+              {editingTotalBudget ? (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-[15px] text-zinc-500 dark:text-zinc-400 font-medium">Budget: $</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={totalBudgetDraft}
+                    onChange={(e) => setTotalBudgetDraft(e.target.value)}
+                    className="w-24 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-[15px] text-zinc-900 dark:text-white text-center outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => {
+                      const val = parseFloat(totalBudgetDraft);
+                      if (!isNaN(val) && val > 0) setTotalBudget(val);
+                      setEditingTotalBudget(false);
+                    }}
+                    className="w-7 h-7 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center hover:bg-teal-200 dark:hover:bg-teal-800/60 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  </button>
+                  <button
+                    onClick={() => setEditingTotalBudget(false)}
+                    className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-[15px] text-zinc-500 dark:text-zinc-400 font-medium">
+                  ${remaining.toLocaleString()} remaining of ${totalBudget.toLocaleString()}
+                </div>
+              )}
             </div>
 
             {/* Progress Bar */}
@@ -512,7 +672,46 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
 
           {/* By Category */}
           <div className="mb-6">
-            <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">By Category</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">By Category</h3>
+              {editingCategoryBudgets ? (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      const updated: Record<string, number> = {};
+                      for (const [key, val] of Object.entries(categoryBudgetDrafts)) {
+                        const num = parseFloat(val);
+                        updated[key] = !isNaN(num) && num > 0 ? num : (categoryBudgets[key] ?? 0);
+                      }
+                      setCategoryBudgets(updated);
+                      setEditingCategoryBudgets(false);
+                    }}
+                    className="w-7 h-7 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center hover:bg-teal-200 dark:hover:bg-teal-800/60 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCategoryBudgetDrafts(Object.fromEntries(Object.entries(categoryBudgets).map(([k, v]) => [k, String(v)])));
+                      setEditingCategoryBudgets(false);
+                    }}
+                    className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setCategoryBudgetDrafts(Object.fromEntries(Object.entries(categoryBudgets).map(([k, v]) => [k, String(v)])));
+                    setEditingCategoryBudgets(true);
+                  }}
+                  className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+                </button>
+              )}
+            </div>
             <div className="space-y-3">
               {adjustedCategories.map((cat) => {
                 const percent = Math.round((cat.spent / cat.budget) * 100);
@@ -527,7 +726,20 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                       </div>
                       <div className="text-right">
                         <div className="text-[15px] font-bold text-zinc-900 dark:text-zinc-100">${cat.spent}</div>
-                        <div className="text-xs text-zinc-500 dark:text-zinc-500 font-medium">of ${cat.budget}</div>
+                        {editingCategoryBudgets ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-zinc-500 dark:text-zinc-500 font-medium">of $</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={categoryBudgetDrafts[cat.category] ?? ""}
+                              onChange={(e) => setCategoryBudgetDrafts((prev) => ({ ...prev, [cat.category]: e.target.value }))}
+                              className="w-16 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-0.5 text-xs text-zinc-900 dark:text-white text-right outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-xs text-zinc-500 dark:text-zinc-500 font-medium">of ${cat.budget}</div>
+                        )}
                       </div>
                     </div>
                     <div className="h-2.5 bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-hidden border border-zinc-200/30 dark:border-transparent">

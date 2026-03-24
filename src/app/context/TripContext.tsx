@@ -47,6 +47,18 @@ interface Trip {
   memberInitials: string[];
 }
 
+interface ProposedActivity {
+  id: number;
+  name: string;
+  location: string;
+  city: string;
+  description: string;
+  tags: string[];
+  price: string;
+  duration: string;
+  status: "pending" | "approved" | "rejected";
+}
+
 interface CreateTripData {
   title: string;
   destinations: string[];
@@ -63,6 +75,13 @@ interface TripContextType {
   loading: boolean;
   createTrip: (data: CreateTripData) => Promise<{ error: string | null }>;
   loadTrips: () => Promise<void>;
+  proposedActivities: ProposedActivity[];
+  approvedActivities: ProposedActivity[];
+  proposeActivity: (activity: Omit<ProposedActivity, "status">) => void;
+  approveActivity: (id: number) => void;
+  rejectActivity: (id: number) => void;
+  addMember: (tripId: number, name: string, color: string) => void;
+  removeMember: (tripId: number, memberIndex: number) => void;
 }
 
 const TripContext = createContext<TripContextType | undefined>(undefined);
@@ -666,7 +685,86 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
   const [supabaseTrips, setSupabaseTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [proposedActivities, setProposedActivities] = useState<ProposedActivity[]>([]);
+  const [localMockTrips, setLocalMockTrips] = useState<Trip[]>(mockTrips);
   const { user } = useAuth();
+
+  const proposeActivity = useCallback((activity: Omit<ProposedActivity, "status">) => {
+    setProposedActivities((prev) => {
+      if (prev.some((a) => a.id === activity.id)) return prev;
+      return [...prev, { ...activity, status: "pending" as const }];
+    });
+  }, []);
+
+  const approveActivity = useCallback((id: number) => {
+    setProposedActivities((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status: "approved" as const } : a))
+    );
+  }, []);
+
+  const rejectActivity = useCallback((id: number) => {
+    setProposedActivities((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status: "rejected" as const } : a))
+    );
+  }, []);
+
+  const approvedActivities = proposedActivities.filter((a) => a.status === "approved");
+
+  const addMember = useCallback((tripId: number, name: string, color: string) => {
+    const initial = name.charAt(0).toUpperCase();
+    const updateTrips = (prev: Trip[]) =>
+      prev.map((t) =>
+        t.id === tripId
+          ? {
+              ...t,
+              memberInitials: [...t.memberInitials, initial],
+              memberColors: [...t.memberColors, color],
+              members: t.members + 1,
+            }
+          : t
+      );
+    setLocalMockTrips(updateTrips);
+    setSupabaseTrips(updateTrips);
+    // Also update activeTrip if it matches
+    setActiveTrip((prev) => {
+      if (prev && prev.id === tripId) {
+        return {
+          ...prev,
+          memberInitials: [...prev.memberInitials, initial],
+          memberColors: [...prev.memberColors, color],
+          members: prev.members + 1,
+        };
+      }
+      return prev;
+    });
+  }, []);
+
+  const removeMember = useCallback((tripId: number, memberIndex: number) => {
+    const updateTrips = (prev: Trip[]) =>
+      prev.map((t) =>
+        t.id === tripId
+          ? {
+              ...t,
+              memberInitials: t.memberInitials.filter((_, i) => i !== memberIndex),
+              memberColors: t.memberColors.filter((_, i) => i !== memberIndex),
+              members: Math.max(0, t.members - 1),
+            }
+          : t
+      );
+    setLocalMockTrips(updateTrips);
+    setSupabaseTrips(updateTrips);
+    setActiveTrip((prev) => {
+      if (prev && prev.id === tripId) {
+        return {
+          ...prev,
+          memberInitials: prev.memberInitials.filter((_, i) => i !== memberIndex),
+          memberColors: prev.memberColors.filter((_, i) => i !== memberIndex),
+          members: Math.max(0, prev.members - 1),
+        };
+      }
+      return prev;
+    });
+  }, []);
 
   const loadTrips = useCallback(async () => {
     if (!user) {
@@ -716,10 +814,10 @@ export function TripProvider({ children }: { children: ReactNode }) {
   };
 
   // Use Supabase trips if available, otherwise fall back to mock data
-  const trips = user && supabaseTrips.length > 0 ? supabaseTrips : mockTrips;
+  const trips = user && supabaseTrips.length > 0 ? supabaseTrips : localMockTrips;
 
   return (
-    <TripContext.Provider value={{ activeTrip, setActiveTrip, trips, loading, createTrip, loadTrips }}>
+    <TripContext.Provider value={{ activeTrip, setActiveTrip, trips, loading, createTrip, loadTrips, proposedActivities, approvedActivities, proposeActivity, approveActivity, rejectActivity, addMember, removeMember }}>
       {children}
     </TripContext.Provider>
   );
