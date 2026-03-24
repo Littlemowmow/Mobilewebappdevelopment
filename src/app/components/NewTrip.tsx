@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Users, Minus } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { useTrip } from "../context/TripContext";
@@ -10,7 +10,7 @@ export function NewTrip() {
   const [destinations, setDestinations] = useState<string[]>([""]);
   const [daysPerCity, setDaysPerCity] = useState<number[]>([2]);
   const [budget, setBudget] = useState("");
-  const [inviteEmails, setInviteEmails] = useState("");
+  const [groupSize, setGroupSize] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const { createTrip } = useTrip();
   const navigate = useNavigate();
@@ -173,17 +173,40 @@ export function NewTrip() {
         </div>
       </div>
 
-      {/* Invite Members */}
+      {/* Group Size */}
       <div className="mb-8">
-        <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Invite Members</label>
-        <input
-          type="email"
-          placeholder="Enter email addresses"
-          value={inviteEmails}
-          onChange={(e) => setInviteEmails(e.target.value)}
-          className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none"
-        />
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 ml-1">Separate multiple emails with commas</p>
+        <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Group Size</label>
+        <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm dark:shadow-none">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center border border-orange-100/80 dark:border-orange-800/50">
+              <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <span className="text-[15px] font-medium text-zinc-900 dark:text-white">{groupSize} {groupSize === 1 ? "person" : "people"}</span>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Including you</p>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
+              disabled={groupSize <= 1}
+              className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="w-10 text-center text-[17px] font-bold text-zinc-900 dark:text-white tabular-nums">{groupSize}</span>
+            <button
+              type="button"
+              onClick={() => setGroupSize(Math.min(20, groupSize + 1))}
+              disabled={groupSize >= 20}
+              className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 ml-1">You can add members by name later from the trip page</p>
       </div>
 
       {/* Create Button */}
