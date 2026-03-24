@@ -1,4 +1,4 @@
-import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check } from "lucide-react";
+import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send, Copy, Share2 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
 import { useState, useEffect } from "react";
@@ -14,6 +14,8 @@ const MEMBER_COLOR_OPTIONS = [
   { label: "Purple", value: "bg-purple-500" },
 ];
 
+const EMOJI_OPTIONS = ["😎", "🤠", "🥳", "😈", "🦊", "🐸", "🌸", "⚡", "🔥", "💎", "🎯", "🌊", "🍕", "✈️", "🎒"];
+
 export function TripDetail() {
   const { tripId } = useParams();
   const navigate = useNavigate();
@@ -21,8 +23,11 @@ export function TripDetail() {
   const [activeTab, setActiveTab] = useState<"schedule" | "budget" | "votes">("schedule");
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
-  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [newMemberPhone, setNewMemberPhone] = useState("");
+  const [newMemberEmoji, setNewMemberEmoji] = useState("😎");
   const [newMemberColor, setNewMemberColor] = useState(MEMBER_COLOR_OPTIONS[0].value);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
 
   const trip = trips.find(t => String(t.id) === String(tripId));
 
@@ -190,27 +195,45 @@ export function TripDetail() {
                 type="text"
                 value={newMemberName}
                 onChange={(e) => setNewMemberName(e.target.value)}
-                placeholder="Enter name"
+                placeholder="Their name"
                 className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-[15px] focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
               />
             </div>
 
-            {/* Email Input */}
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                Email <span className="text-zinc-400 dark:text-zinc-500 font-normal">(optional)</span>
-              </label>
+            {/* Phone Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">Phone Number</label>
               <input
-                type="email"
-                value={newMemberEmail}
-                onChange={(e) => setNewMemberEmail(e.target.value)}
-                placeholder="Enter email"
+                type="tel"
+                value={newMemberPhone}
+                onChange={(e) => setNewMemberPhone(e.target.value)}
+                placeholder="+1 (555) 000-0000"
                 className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-[15px] focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
               />
             </div>
 
-            {/* Color Picker */}
-            <div className="mb-6">
+            {/* Emoji Avatar */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Avatar</label>
+              <div className="flex flex-wrap gap-2">
+                {EMOJI_OPTIONS.map((e) => (
+                  <button
+                    key={e}
+                    onClick={() => setNewMemberEmoji(e)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+                      newMemberEmoji === e
+                        ? "bg-orange-100 dark:bg-orange-900/40 border-2 border-orange-500 shadow-md scale-110"
+                        : "bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    }`}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Color */}
+            <div className="mb-5">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Color</label>
               <div className="flex items-center gap-3">
                 {MEMBER_COLOR_OPTIONS.map((color) => (
@@ -229,14 +252,45 @@ export function TripDetail() {
               </div>
             </div>
 
+            {/* Send Code Option */}
+            {newMemberPhone.trim() && trip && (
+              <div className="mb-5 bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-200/50 dark:border-zinc-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">Send them the invite code?</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const msg = `Join our trip "${trip.name}" on Weventr! Code: ${trip.code}\n${window.location.origin}/join/${trip.code}`;
+                      const smsUrl = `sms:${newMemberPhone.trim()}?body=${encodeURIComponent(msg)}`;
+                      window.open(smsUrl, '_blank');
+                      setCodeSent(true);
+                      setTimeout(() => setCodeSent(false), 3000);
+                    }}
+                    className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                      codeSent
+                        ? "bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400"
+                        : "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50"
+                    }`}
+                  >
+                    {codeSent ? "Opened!" : "Send SMS"}
+                  </button>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 ml-6">Opens your messaging app with the invite link</p>
+              </div>
+            )}
+
             {/* Add Button */}
             <button
               onClick={() => {
                 if (newMemberName.trim()) {
                   addMember(trip.id, newMemberName.trim(), newMemberColor);
                   setNewMemberName("");
-                  setNewMemberEmail("");
+                  setNewMemberPhone("");
+                  setNewMemberEmoji("😎");
                   setNewMemberColor(MEMBER_COLOR_OPTIONS[0].value);
+                  setCodeSent(false);
                   setShowAddMember(false);
                 }
               }}
