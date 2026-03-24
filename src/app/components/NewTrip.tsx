@@ -1,13 +1,81 @@
-import { ArrowLeft, Plus, MapPin, Users, Minus, X } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Users, Minus, X, Loader2, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useTrip } from "../context/TripContext";
+
+interface CityResult {
+  display: string; // "Tokyo, Japan"
+  city: string;    // "Tokyo"
+  country: string; // "Japan"
+  flag: string;    // "🇯🇵"
+}
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  "Japan": "🇯🇵", "Spain": "🇪🇸", "France": "🇫🇷", "Italy": "🇮🇹", "Germany": "🇩🇪",
+  "United Kingdom": "🇬🇧", "Portugal": "🇵🇹", "United States": "🇺🇸", "Netherlands": "🇳🇱",
+  "Thailand": "🇹🇭", "Australia": "🇦🇺", "Mexico": "🇲🇽", "Brazil": "🇧🇷", "Canada": "🇨🇦",
+  "Greece": "🇬🇷", "Turkey": "🇹🇷", "South Korea": "🇰🇷", "India": "🇮🇳", "Morocco": "🇲🇦",
+  "Croatia": "🇭🇷", "Indonesia": "🇮🇩", "Vietnam": "🇻🇳", "Colombia": "🇨🇴", "Argentina": "🇦🇷",
+  "Egypt": "🇪🇬", "Czech Republic": "🇨🇿", "Czechia": "🇨🇿", "Austria": "🇦🇹", "Switzerland": "🇨🇭",
+  "Ireland": "🇮🇪", "Belgium": "🇧🇪", "Norway": "🇳🇴", "Sweden": "🇸🇪", "Denmark": "🇩🇰",
+  "Finland": "🇫🇮", "Poland": "🇵🇱", "Hungary": "🇭🇺", "Iceland": "🇮🇸", "New Zealand": "🇳🇿",
+  "Singapore": "🇸🇬", "Malaysia": "🇲🇾", "Philippines": "🇵🇭", "China": "🇨🇳", "Taiwan": "🇹🇼",
+  "Israel": "🇮🇱", "Jordan": "🇯🇴", "Peru": "🇵🇪", "Chile": "🇨🇱", "Cuba": "🇨🇺",
+  "Jamaica": "🇯🇲", "Dominican Republic": "🇩🇴", "Costa Rica": "🇨🇷", "Romania": "🇷🇴",
+};
+
+function useCitySearch() {
+  const [results, setResults] = useState<CityResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const search = useCallback((query: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (query.trim().length < 2) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5&featuretype=city`,
+          { headers: { "Accept-Language": "en" } }
+        );
+        const data = await res.json();
+        const cities: CityResult[] = data
+          .filter((r: any) => r.address?.country)
+          .map((r: any) => {
+            const city = r.address?.city || r.address?.town || r.address?.village || r.name || query;
+            const country = r.address?.country || "";
+            return {
+              display: `${city}, ${country}`,
+              city,
+              country,
+              flag: COUNTRY_FLAGS[country] || "🌍",
+            };
+          })
+          // Deduplicate by display name
+          .filter((c: CityResult, i: number, arr: CityResult[]) => arr.findIndex(a => a.display === c.display) === i);
+        setResults(cities);
+      } catch {
+        setResults([]);
+      }
+      setSearching(false);
+    }, 300);
+  }, []);
+
+  return { results, searching, search, clearResults: () => setResults([]) };
+}
 
 export function NewTrip() {
   const [tripName, setTripName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [destinations, setDestinations] = useState<string[]>([""]);
+  const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
+  const { results, searching, search, clearResults } = useCitySearch();
   const [daysPerCity, setDaysPerCity] = useState<number[]>([2]);
   const [budget, setBudget] = useState("");
   const [groupSize, setGroupSize] = useState(1);
@@ -53,6 +121,16 @@ export function NewTrip() {
     const updated = [...destinations];
     updated[index] = value;
     setDestinations(updated);
+    setActiveSearchIndex(index);
+    search(value);
+  };
+
+  const selectCity = (index: number, city: CityResult) => {
+    const updated = [...destinations];
+    updated[index] = city.display;
+    setDestinations(updated);
+    setActiveSearchIndex(null);
+    clearResults();
   };
 
   const handleDaysChange = (index: number, delta: number) => {
@@ -135,26 +213,54 @@ export function NewTrip() {
         <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Destinations</label>
         <div className="space-y-2 mb-3">
           {destinations.map((dest, index) => (
-            <div key={index} className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 flex items-center gap-3 shadow-sm dark:shadow-none">
-              <MapPin className="w-5 h-5 text-orange-500" />
-              <input
-                type="text"
-                placeholder="Add a city"
-                value={dest}
-                onChange={(e) => handleDestinationChange(index, e.target.value)}
-                className="flex-1 bg-transparent text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none"
-              />
-              {destinations.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDestinations(destinations.filter((_, i) => i !== index));
-                    setDaysPerCity(daysPerCity.filter((_, i) => i !== index));
-                  }}
-                  className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                >
-                  <X className="w-4 h-4 text-red-500 dark:text-red-400" />
-                </button>
+            <div key={index} className="relative">
+              <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 flex items-center gap-3 shadow-sm dark:shadow-none">
+                <MapPin className="w-5 h-5 text-orange-500" />
+                <input
+                  type="text"
+                  placeholder="Search for a city..."
+                  value={dest}
+                  onChange={(e) => handleDestinationChange(index, e.target.value)}
+                  onFocus={() => { setActiveSearchIndex(index); if (dest.length >= 2) search(dest); }}
+                  onBlur={() => setTimeout(() => { setActiveSearchIndex(null); clearResults(); }, 200)}
+                  className="flex-1 bg-transparent text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none"
+                />
+                {searching && activeSearchIndex === index && (
+                  <Loader2 className="w-4 h-4 text-zinc-400 animate-spin flex-shrink-0" />
+                )}
+                {destinations.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDestinations(destinations.filter((_, i) => i !== index));
+                      setDaysPerCity(daysPerCity.filter((_, i) => i !== index));
+                    }}
+                    className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                  >
+                    <X className="w-4 h-4 text-red-500 dark:text-red-400" />
+                  </button>
+                )}
+              </div>
+              {/* Autocomplete Dropdown */}
+              {activeSearchIndex === index && results.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+                  {results.map((city, ci) => (
+                    <button
+                      key={ci}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectCity(index, city)}
+                      className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-b-0"
+                    >
+                      <span className="text-xl">{city.flag}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[15px] font-medium text-zinc-900 dark:text-white truncate">{city.city}</div>
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400">{city.country}</div>
+                      </div>
+                      <MapPin className="w-4 h-4 text-zinc-400 dark:text-zinc-600 flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           ))}
