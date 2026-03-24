@@ -1,6 +1,6 @@
 import { ArrowLeft, Plus, MapPin, Users, Minus, X } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTrip } from "../context/TripContext";
 
 export function NewTrip() {
@@ -15,9 +15,38 @@ export function NewTrip() {
   const { createTrip } = useTrip();
   const navigate = useNavigate();
 
+  // Calculate total trip days from date range
+  const tripDays = useMemo(() => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+  }, [startDate, endDate]);
+
+  // Auto-distribute days when dates change or cities change
+  useEffect(() => {
+    if (tripDays <= 0) return;
+    const cityCount = destinations.filter(d => d.trim()).length || destinations.length;
+    if (cityCount === 1) {
+      // Single city gets all the days
+      setDaysPerCity([tripDays]);
+    } else if (cityCount > 1) {
+      // Only auto-distribute if current total doesn't match trip days
+      const currentTotal = daysPerCity.reduce((s, d) => s + d, 0);
+      if (currentTotal !== tripDays) {
+        const base = Math.floor(tripDays / cityCount);
+        const remainder = tripDays % cityCount;
+        setDaysPerCity(destinations.map((_, i) => base + (i < remainder ? 1 : 0)));
+      }
+    }
+  }, [tripDays, destinations.length]);
+
   const handleAddCity = () => {
     setDestinations([...destinations, ""]);
-    setDaysPerCity([...daysPerCity, 2]);
+    // Split remaining days for the new city
+    const usedDays = daysPerCity.reduce((s, d) => s + d, 0);
+    const remaining = Math.max(1, tripDays - usedDays);
+    setDaysPerCity([...daysPerCity, tripDays > 0 ? remaining : 2]);
   };
 
   const handleDestinationChange = (index: number, value: string) => {
