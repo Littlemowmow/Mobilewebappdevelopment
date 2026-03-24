@@ -664,7 +664,11 @@ function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): 
     activities: Array.from({ length: days }, () => []),
   }));
 
-  const days: Day[] = Array.from({ length: Math.min(diffDays, 14) }, (_, i) => {
+  // Total days = sum of per-city days (not date range)
+  const totalCityDays = cities.reduce((sum, c) => sum + c.days, 0);
+  const actualDays = totalCityDays > 0 ? totalCityDays : diffDays;
+
+  const days: Day[] = Array.from({ length: Math.min(actualDays, 30) }, (_, i) => {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
     return {
@@ -681,7 +685,7 @@ function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): 
     id: dbTrip.id as string | number,
     name: (dbTrip.title as string) || "Untitled Trip",
     dates: `${startStr} \u2013 ${endStr}`,
-    duration: `${diffDays} days`,
+    duration: `${actualDays} days`,
     status: (dbTrip.status as string) === "completed" ? "Completed" : "Active",
     cities,
     days,
