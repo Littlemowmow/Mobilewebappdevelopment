@@ -186,10 +186,10 @@ export function InviteMembers() {
 
       {/* Continue Button */}
       <button
-        onClick={() => navigate(`/trips/${tripId}`)}
+        onClick={() => navigate(`/trips/${tripId}/setup`)}
         className="w-full bg-gradient-to-br from-zinc-900 to-zinc-800 dark:from-white dark:to-zinc-200 text-white dark:text-black py-4 rounded-2xl text-[15px] font-semibold transition-all shadow-lg flex items-center justify-center gap-2"
       >
-        Continue to Trip
+        Continue Setup
         <ArrowRight className="w-5 h-5" />
       </button>
 
@@ -197,7 +197,7 @@ export function InviteMembers() {
         onClick={() => navigate(`/trips/${tripId}`)}
         className="w-full text-center mt-3 text-zinc-500 dark:text-zinc-400 text-sm font-medium hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
       >
-        Skip for now
+        Skip to trip
       </button>
     </div>
   );

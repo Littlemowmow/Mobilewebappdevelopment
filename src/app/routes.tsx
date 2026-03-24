@@ -8,6 +8,7 @@ import { NewTrip } from "./components/NewTrip";
 import { Login } from "./components/Login";
 import { InviteMembers } from "./components/InviteMembers";
 import { JoinTrip } from "./components/JoinTrip";
+import { TripSetup } from "./components/TripSetup";
 
 export const router = createBrowserRouter([
   {
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
       { path: "trips/new", Component: NewTrip },
       { path: "trips/:tripId", Component: TripDetail },
       { path: "trips/:tripId/invite", Component: InviteMembers },
+      { path: "trips/:tripId/setup", Component: TripSetup },
       { path: "profile", Component: Profile },
     ],
   },
