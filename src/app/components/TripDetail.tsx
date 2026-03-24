@@ -1,7 +1,8 @@
-import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send, Copy, Share2 } from "lucide-react";
+import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send, Copy, Share2, Loader2 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
 import { useState, useEffect } from "react";
+import { sendTripInvite } from "../../lib/sms";
 import { Schedule } from "./Schedule";
 import { Budget } from "./Budget";
 import { BlindMatch } from "./BlindMatch";
@@ -261,23 +262,32 @@ export function TripDetail() {
                     <span className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">Send them the invite code?</span>
                   </div>
                   <button
-                    onClick={() => {
-                      const msg = `Join our trip "${trip.name}" on Weventr! Code: ${trip.code}\n${window.location.origin}/join/${trip.code}`;
-                      const smsUrl = `sms:${newMemberPhone.trim()}?body=${encodeURIComponent(msg)}`;
-                      window.open(smsUrl, '_blank');
+                    onClick={async () => {
                       setCodeSent(true);
+                      const result = await sendTripInvite(
+                        newMemberPhone.trim(),
+                        trip.name,
+                        trip.code,
+                        trip.memberInitials[0] || "Someone"
+                      );
+                      if (!result.success) {
+                        // Fallback to native SMS if Sendblue fails
+                        const msg = `Join our trip "${trip.name}" on Weventr! Code: ${trip.code}\n${window.location.origin}/join/${trip.code}`;
+                        window.open(`sms:${newMemberPhone.trim()}?body=${encodeURIComponent(msg)}`, '_blank');
+                      }
                       setTimeout(() => setCodeSent(false), 3000);
                     }}
+                    disabled={codeSent}
                     className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${
                       codeSent
                         ? "bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400"
                         : "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50"
                     }`}
                   >
-                    {codeSent ? "Opened!" : "Send SMS"}
+                    {codeSent ? "✓ Sent!" : "Send Invite"}
                   </button>
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 ml-6">Opens your messaging app with the invite link</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 ml-6">Sends an iMessage with the trip invite link</p>
               </div>
             )}
 
