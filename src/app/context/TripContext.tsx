@@ -73,7 +73,7 @@ interface TripContextType {
   setActiveTrip: (trip: Trip | null) => void;
   trips: Trip[];
   loading: boolean;
-  createTrip: (data: CreateTripData) => Promise<{ error: string | null }>;
+  createTrip: (data: CreateTripData) => Promise<{ error: string | null; tripId?: string | number }>;
   loadTrips: () => Promise<void>;
   proposedActivities: ProposedActivity[];
   approvedActivities: ProposedActivity[];
@@ -791,7 +791,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     loadTrips();
   }, [loadTrips]);
 
-  const createTrip = async (data: CreateTripData): Promise<{ error: string | null }> => {
+  const createTrip = async (data: CreateTripData): Promise<{ error: string | null; tripId?: string | number }> => {
     if (!user) return { error: "You must be logged in to create a trip" };
 
     const inviteCode = generateInviteCode();
@@ -811,8 +811,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
     if (error) {
       console.error("Create trip error:", error);
       // Even if Supabase fails, add locally so user sees it
+      const localId = Date.now();
       const localTrip = mapSupabaseTripToTrip({
-        id: Date.now(),
+        id: localId,
         title: data.title,
         destinations: data.destinations.filter((d) => d.trim() !== ""),
         start_date: data.start_date,
@@ -824,12 +825,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
         invite_code: inviteCode,
       }, 0);
       setSupabaseTrips(prev => [localTrip, ...prev]);
-      return { error: null };
+      return { error: null, tripId: localId };
     }
 
     if (created) {
       const newTrip = mapSupabaseTripToTrip(created, 0);
       setSupabaseTrips(prev => [newTrip, ...prev]);
+      return { error: null, tripId: created.id };
     }
     return { error: null };
   };

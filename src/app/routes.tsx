@@ -6,11 +6,17 @@ import { TripDetail } from "./components/TripDetail";
 import { Profile } from "./components/Profile";
 import { NewTrip } from "./components/NewTrip";
 import { Login } from "./components/Login";
+import { InviteMembers } from "./components/InviteMembers";
+import { JoinTrip } from "./components/JoinTrip";
 
 export const router = createBrowserRouter([
   {
     path: "/login",
     Component: Login,
+  },
+  {
+    path: "/join/:code",
+    Component: JoinTrip,
   },
   {
     path: "/",
@@ -20,6 +26,7 @@ export const router = createBrowserRouter([
       { path: "trips", Component: Trips },
       { path: "trips/new", Component: NewTrip },
       { path: "trips/:tripId", Component: TripDetail },
+      { path: "trips/:tripId/invite", Component: InviteMembers },
       { path: "profile", Component: Profile },
     ],
   },

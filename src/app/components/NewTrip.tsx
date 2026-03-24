@@ -35,7 +35,7 @@ export function NewTrip() {
   const handleCreateTrip = async () => {
     if (!tripName.trim() || !startDate || !endDate) return;
     setSubmitting(true);
-    const { error } = await createTrip({
+    const { error, tripId } = await createTrip({
       title: tripName.trim(),
       destinations: destinations.filter((d) => d.trim() !== ""),
       start_date: startDate,
@@ -44,7 +44,9 @@ export function NewTrip() {
       currency: "USD",
     });
     setSubmitting(false);
-    if (!error) {
+    if (!error && tripId) {
+      navigate(`/trips/${tripId}/invite`);
+    } else if (!error) {
       navigate("/trips");
     }
   };
