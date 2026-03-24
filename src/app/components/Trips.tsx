@@ -117,9 +117,16 @@ export function Trips() {
                       {trip.dates} · {trip.duration}
                     </p>
                   </div>
-                  <span className="bg-white text-orange-600 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-lg">
-                    {trip.status.toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {typeof trip.id === "number" && (
+                      <span className="bg-purple-100 text-purple-600 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-lg">
+                        DEMO
+                      </span>
+                    )}
+                    <span className="bg-white text-orange-600 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-lg">
+                      {trip.status.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
               </div>
 

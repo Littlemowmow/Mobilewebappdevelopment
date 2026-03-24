@@ -866,8 +866,11 @@ export function TripProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Logged-in users see only their own trips; mock data is only for demo when not logged in
-  const trips = user ? supabaseTrips : localMockTrips;
+  // Show demo trip when user has no trips yet so they can see what a full trip looks like
+  // Once they create their own trip, demo disappears
+  const trips = user
+    ? supabaseTrips.length > 0 ? supabaseTrips : [...supabaseTrips, ...localMockTrips]
+    : localMockTrips;
 
   return (
     <TripContext.Provider value={{ activeTrip, setActiveTrip, trips, loading, createTrip, loadTrips, proposedActivities, approvedActivities, proposeActivity, approveActivity, rejectActivity, addMember, removeMember }}>
