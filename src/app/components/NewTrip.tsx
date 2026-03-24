@@ -8,6 +8,7 @@ export function NewTrip() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [destinations, setDestinations] = useState<string[]>([""]);
+  const [daysPerCity, setDaysPerCity] = useState<number[]>([2]);
   const [budget, setBudget] = useState("");
   const [inviteEmails, setInviteEmails] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -16,12 +17,19 @@ export function NewTrip() {
 
   const handleAddCity = () => {
     setDestinations([...destinations, ""]);
+    setDaysPerCity([...daysPerCity, 2]);
   };
 
   const handleDestinationChange = (index: number, value: string) => {
     const updated = [...destinations];
     updated[index] = value;
     setDestinations(updated);
+  };
+
+  const handleDaysChange = (index: number, delta: number) => {
+    const updated = [...daysPerCity];
+    updated[index] = Math.min(14, Math.max(1, (updated[index] || 2) + delta));
+    setDaysPerCity(updated);
   };
 
   const handleCreateTrip = async () => {
@@ -106,6 +114,49 @@ export function NewTrip() {
           + Add Another City
         </button>
       </div>
+
+      {/* Days per City */}
+      {destinations.some((d) => d.trim() !== "") && (
+        <div className="mb-5">
+          <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Days per City</label>
+          <div className="space-y-2 mb-3">
+            {destinations.map((dest, index) =>
+              dest.trim() ? (
+                <div
+                  key={index}
+                  className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-3.5 flex items-center justify-between shadow-sm dark:shadow-none"
+                >
+                  <span className="text-[15px] font-medium text-zinc-900 dark:text-white truncate mr-3">{dest.trim()}</span>
+                  <div className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleDaysChange(index, -1)}
+                      disabled={(daysPerCity[index] || 2) <= 1}
+                      className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-semibold text-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      &minus;
+                    </button>
+                    <span className="w-10 text-center text-[15px] font-semibold text-zinc-900 dark:text-white tabular-nums">
+                      {daysPerCity[index] || 2}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDaysChange(index, 1)}
+                      disabled={(daysPerCity[index] || 2) >= 14}
+                      className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-semibold text-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ) : null
+            )}
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 ml-1 font-medium">
+            Total: {destinations.reduce((sum, d, i) => sum + (d.trim() ? (daysPerCity[i] || 2) : 0), 0)} days
+          </p>
+        </div>
+      )}
 
       {/* Budget */}
       <div className="mb-8">
