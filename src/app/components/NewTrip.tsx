@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, MapPin, Users, Minus } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Users, Minus, X } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { useTrip } from "../context/TripContext";
@@ -107,6 +107,18 @@ export function NewTrip() {
                 onChange={(e) => handleDestinationChange(index, e.target.value)}
                 className="flex-1 bg-transparent text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none"
               />
+              {destinations.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDestinations(destinations.filter((_, i) => i !== index));
+                    setDaysPerCity(daysPerCity.filter((_, i) => i !== index));
+                  }}
+                  className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                >
+                  <X className="w-4 h-4 text-red-500 dark:text-red-400" />
+                </button>
+              )}
             </div>
           ))}
         </div>
