@@ -62,6 +62,7 @@ interface ProposedActivity {
 interface CreateTripData {
   title: string;
   destinations: string[];
+  daysPerCity?: number[];
   start_date: string;
   end_date: string;
   budget?: number;
@@ -631,7 +632,7 @@ function generateInviteCode(): string {
 }
 
 function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): Trip {
-  const destinations = (dbTrip.destinations as string[]) || [];
+  const rawDestinations = (dbTrip.destinations as string[]) || [];
   const startDate = dbTrip.start_date ? new Date(dbTrip.start_date as string) : new Date();
   const endDate = dbTrip.end_date ? new Date(dbTrip.end_date as string) : new Date();
   const diffDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
@@ -639,16 +640,28 @@ function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): 
   const flagMap: Record<string, string> = {
     spain: "\u{1F1EA}\u{1F1F8}", france: "\u{1F1EB}\u{1F1F7}", italy: "\u{1F1EE}\u{1F1F9}", germany: "\u{1F1E9}\u{1F1EA}",
     uk: "\u{1F1EC}\u{1F1E7}", portugal: "\u{1F1F5}\u{1F1F9}", japan: "\u{1F1EF}\u{1F1F5}", usa: "\u{1F1FA}\u{1F1F8}",
+    barcelona: "\u{1F1EA}\u{1F1F8}", madrid: "\u{1F1EA}\u{1F1F8}", lisbon: "\u{1F1F5}\u{1F1F9}",
+    paris: "\u{1F1EB}\u{1F1F7}", rome: "\u{1F1EE}\u{1F1F9}", london: "\u{1F1EC}\u{1F1E7}",
+    tokyo: "\u{1F1EF}\u{1F1F5}", berlin: "\u{1F1E9}\u{1F1EA}", amsterdam: "\u{1F1F3}\u{1F1F1}",
   };
   const defaultFlag = "\u{1F30D}";
 
-  const daysPerCity = destinations.length > 0 ? Math.max(1, Math.floor(diffDays / destinations.length)) : diffDays;
+  // Parse "CityName:Days" format, fall back to even split
+  const parsed = rawDestinations.map((raw) => {
+    const parts = raw.split(":");
+    if (parts.length >= 2) {
+      const days = parseInt(parts[parts.length - 1], 10);
+      const name = parts.slice(0, -1).join(":");
+      return { name: name.trim(), days: isNaN(days) ? 2 : days };
+    }
+    return { name: raw.trim(), days: Math.max(1, Math.floor(diffDays / (rawDestinations.length || 1))) };
+  });
 
-  const cities: City[] = destinations.map((dest) => ({
-    name: dest,
-    flag: flagMap[dest.toLowerCase()] || defaultFlag,
-    days: daysPerCity,
-    activities: [[]],
+  const cities: City[] = parsed.map(({ name, days }) => ({
+    name,
+    flag: flagMap[name.toLowerCase()] || defaultFlag,
+    days,
+    activities: Array.from({ length: days }, () => []),
   }));
 
   const days: Day[] = Array.from({ length: Math.min(diffDays, 14) }, (_, i) => {
@@ -795,9 +808,15 @@ export function TripProvider({ children }: { children: ReactNode }) {
     if (!user) return { error: "You must be logged in to create a trip" };
 
     const inviteCode = generateInviteCode();
+    // Encode days per city into destinations as "CityName:Days" format
+    const filteredDests = data.destinations.filter((d) => d.trim() !== "");
+    const encodedDests = filteredDests.map((dest, i) => {
+      const days = data.daysPerCity?.[i] || 2;
+      return `${dest.trim()}:${days}`;
+    });
     const { data: created, error } = await supabase.from("trips").insert({
       title: data.title,
-      destinations: data.destinations.filter((d) => d.trim() !== ""),
+      destinations: encodedDests,
       start_date: data.start_date,
       end_date: data.end_date,
       budget: data.budget || 0,
@@ -815,7 +834,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       const localTrip = mapSupabaseTripToTrip({
         id: localId,
         title: data.title,
-        destinations: data.destinations.filter((d) => d.trim() !== ""),
+        destinations: encodedDests,
         start_date: data.start_date,
         end_date: data.end_date,
         budget: data.budget || 0,

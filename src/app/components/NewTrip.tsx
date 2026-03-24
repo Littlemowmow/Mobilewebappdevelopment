@@ -35,9 +35,15 @@ export function NewTrip() {
   const handleCreateTrip = async () => {
     if (!tripName.trim() || !startDate || !endDate) return;
     setSubmitting(true);
+    const filteredDests = destinations.filter((d) => d.trim() !== "");
+    const filteredDays = destinations.reduce<number[]>((acc, d, i) => {
+      if (d.trim() !== "") acc.push(daysPerCity[i] || 2);
+      return acc;
+    }, []);
     const { error, tripId } = await createTrip({
       title: tripName.trim(),
-      destinations: destinations.filter((d) => d.trim() !== ""),
+      destinations: filteredDests,
+      daysPerCity: filteredDays,
       start_date: startDate,
       end_date: endDate,
       budget: budget ? parseFloat(budget) : undefined,
