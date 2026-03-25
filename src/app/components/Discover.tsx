@@ -550,24 +550,12 @@ export function Discover() {
 
 interface SwipeCardProps {
   place: Place;
-  onSwipe: (direction: "left" | "right") => void;
+  onSwipe?: (direction: "left" | "right") => void;
   intensity: number;
 }
 
 function SwipeCard({ place, onSwipe, intensity }: SwipeCardProps) {
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-25, 25]);
-  const swipeDirectionRef = useRef<"left" | "right">("right");
-
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (Math.abs(info.offset.x) > 120) {
-      const direction = info.offset.x > 0 ? "right" : "left";
-      swipeDirectionRef.current = direction;
-      onSwipe(direction);
-    }
-  };
-
-  // Determine image src: use DB image URL if it looks like a URL, otherwise fallback to unsplash search
+  // Determine image src
   const imageSrc = place.image && (place.image.startsWith("http://") || place.image.startsWith("https://"))
     ? place.image
     : place.image
@@ -576,24 +564,18 @@ function SwipeCard({ place, onSwipe, intensity }: SwipeCardProps) {
 
   return (
     <motion.div
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      style={{ x, rotate }}
-      onDragEnd={handleDragEnd}
-      className="absolute inset-0 cursor-grab active:cursor-grabbing z-10"
-      whileTap={{ cursor: "grabbing" }}
+      className="absolute inset-0 z-10"
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{
-        x: intensity * 45,
-        rotate: intensity * 8,
+        x: intensity * 60,
+        rotate: intensity * 10,
         opacity: 1,
         scale: 1,
       }}
       exit={{
-        x: swipeDirectionRef.current === "left" ? -500 : 500,
-        rotate: swipeDirectionRef.current === "left" ? -30 : 30,
+        x: intensity < 0 ? -400 : 400,
+        rotate: intensity < 0 ? -25 : 25,
         opacity: 0,
-        transition: { type: "spring", stiffness: 200, damping: 30, duration: 0.35 },
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
