@@ -797,10 +797,15 @@ export function TripProvider({ children }: { children: ReactNode }) {
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (!error && data && data.length > 0) {
-      setSupabaseTrips(data.map((t, i) => mapSupabaseTripToTrip(t, i)));
-    } else {
-      setSupabaseTrips([]);
+    if (!error && data) {
+      if (data.length > 0) {
+        setSupabaseTrips(data.map((t, i) => mapSupabaseTripToTrip(t, i)));
+      }
+      // If data is empty, keep existing local trips (don't wipe them)
+      // They may have been created locally and not yet synced
+    } else if (error) {
+      console.error("Failed to load trips:", error);
+      // Keep existing trips on error — don't wipe
     }
     setLoading(false);
   }, [user]);

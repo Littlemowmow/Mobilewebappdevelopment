@@ -100,7 +100,7 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
           description,
           price: amenity === "restaurant" ? "$$" : t.fee === "yes" ? "$" : "",
           duration: tourism === "museum" ? "1-2h" : historic ? "30min-1h" : "",
-          rating: 8.0 + Math.random() * 1.5,
+          rating: 0,
           tags: [cat, "SideQuest"],
           image: t.image || t.wikimedia_commons || "",
           city: cityName,
@@ -150,7 +150,7 @@ async function fetchWikipediaPlaces(lat: number, lon: number, cityName: string):
               description: page.extract.slice(0, 200),
               price: "",
               duration: "",
-              rating: 8.5 + Math.random(),
+              rating: 0,
               tags: ["Culture", "SideQuest"],
               image: page.thumbnail?.source || "",
               city: cityName,
@@ -711,10 +711,12 @@ function SwipeCard({ place, onSwipe, intensity }: SwipeCardProps) {
               <span className="text-zinc-700 dark:text-zinc-300 text-[15px] font-medium">{place.price}</span>
               <span className="text-zinc-500 dark:text-zinc-400 text-[14px]">{place.duration}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full border border-amber-100 dark:border-transparent">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span className="text-[15px] font-semibold text-zinc-900 dark:text-amber-400">{place.rating}</span>
-            </div>
+            {place.rating > 0 && (
+              <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full border border-amber-100 dark:border-transparent">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <span className="text-[15px] font-semibold text-zinc-900 dark:text-amber-400">{place.rating.toFixed(1)}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
