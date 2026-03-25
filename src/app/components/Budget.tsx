@@ -80,11 +80,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   }, [activeTrip]);
 
   // Budget Lock / Trip Fund state
-  const [requiredExpenses, setRequiredExpenses] = useState<RequiredExpense[]>([
-    { category: "Accommodation", emoji: "🏨", perPerson: 200, total: 800, description: "Airbnb (4 nights split)" },
-    { category: "Flights", emoji: "✈️", perPerson: 350, total: 1400, description: "Round-trip flights" },
-    { category: "Transportation", emoji: "🚆", perPerson: 85, total: 340, description: "Trains between cities" },
-  ]);
+  // Required expenses start empty — user adds real costs as they're known
+  const [requiredExpenses, setRequiredExpenses] = useState<RequiredExpense[]>([]);
   const totalRequiredPerPerson = requiredExpenses.reduce((sum, e) => sum + e.perPerson, 0);
   const totalRequired = requiredExpenses.reduce((sum, e) => sum + e.total, 0);
 
@@ -380,6 +377,16 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
               </button>
             </div>
             <div className="space-y-3">
+              {requiredExpenses.length === 0 && !showAddRequired && (
+                <button
+                  onClick={() => setShowAddRequired(true)}
+                  className="w-full bg-white dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 border-dashed rounded-[20px] p-6 text-center hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+                >
+                  <div className="text-3xl mb-2">💰</div>
+                  <p className="text-zinc-900 dark:text-white font-semibold text-[15px] mb-1">No required expenses yet</p>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-xs">Add shared costs like hotels, transport, or group activities</p>
+                </button>
+              )}
               {requiredExpenses.map((expense, idx) => (
                 <div key={`${expense.category}-${idx}`} className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800">
                   <div className="flex items-center justify-between mb-2">
