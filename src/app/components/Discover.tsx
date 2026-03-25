@@ -1,7 +1,9 @@
+"use client";
+
 import { Filter, MapPin, Star, X, Heart, Plane } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { useState, useEffect, useCallback } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "motion/react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, useMotionValue, useTransform, AnimatePresence, animate, type PanInfo } from "motion/react";
 import { useTrip } from "../context/TripContext";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -62,6 +64,25 @@ function mapActivityToPlace(activity: any): Place {
   };
 }
 
+/** Calculate intensity score (1-10) from normalized drag distance (0.65-1.0) */
+function calcIntensityScore(normalizedDrag: number): number {
+  const abs = Math.abs(normalizedDrag);
+  if (abs < 0.65) return 0;
+  if (abs <= 0.75) {
+    // Slight drag -> 4-5
+    const t = (abs - 0.65) / 0.1;
+    return Math.round(4 + t);
+  }
+  if (abs <= 0.85) {
+    // Medium drag -> 6-7
+    const t = (abs - 0.75) / 0.1;
+    return Math.round(6 + t);
+  }
+  // Full drag -> 8-10
+  const t = (abs - 0.85) / 0.15;
+  return Math.round(8 + t * 2);
+}
+
 export function Discover() {
   const { activeTrip, proposeActivity } = useTrip();
   const { user } = useAuth();
@@ -72,6 +93,10 @@ export function Discover() {
   const [intensity, setIntensity] = useState(0);
   const [activeCity, setActiveCity] = useState<string | null>(null);
   const sliderX = useMotionValue(0);
+  // Track whether a swipe action is in progress to prevent double-fires
+  const isSwipingRef = useRef(false);
+  // Key to force-remount the slider draggable, clearing stale drag offset
+  const [sliderKey, setSliderKey] = useState(0);
 
   // Fetch activities from Supabase
   useEffect(() => {
@@ -162,20 +187,26 @@ export function Discover() {
     ? places.filter((p) => p.location.includes(activeCityName))
     : places;
 
+  const resetSlider = useCallback(() => {
+    setIntensity(0);
+    sliderX.set(0);
+    // Remount the draggable to clear internal drag offset
+    setSliderKey((k) => k + 1);
+  }, [sliderX]);
+
   const handleCityClick = (cityName: string) => {
     setActiveCity(cityName);
     setCurrentIndex(0);
-    setIntensity(0);
-    sliderX.set(0);
+    resetSlider();
   };
 
   const saveActivity = useCallback(
-    async (activityId: string) => {
+    async (activityId: string, intensityScore: number) => {
       if (!user) return;
       const { error } = await supabase.from("saved_activities").upsert({
         user_id: user.id,
         activity_id: activityId,
-        is_super_like: false,
+        is_super_like: intensityScore >= 8,
       });
       if (error) {
         console.error("Failed to save activity:", error);
@@ -185,10 +216,15 @@ export function Discover() {
   );
 
   const removeCard = useCallback(
-    (direction: "left" | "right") => {
+    (direction: "left" | "right", intensityAtSwipe: number) => {
+      if (isSwipingRef.current) return;
+      isSwipingRef.current = true;
+
       const currentPlace = filteredPlaces[currentIndex];
+      const score = calcIntensityScore(intensityAtSwipe);
+
       if (direction === "right" && currentPlace) {
-        saveActivity(currentPlace.id);
+        saveActivity(currentPlace.id, score);
         // If there's an active trip, propose this activity for group voting
         if (activeTrip) {
           const cityParts = currentPlace.location.split(", ");
@@ -205,16 +241,20 @@ export function Discover() {
           });
         }
       }
+
+      // Advance index — AnimatePresence handles the exit animation via the key change
+      setCurrentIndex((prev) => prev + 1);
+      resetSlider();
+
+      // Allow next swipe after exit animation completes
       setTimeout(() => {
-        setCurrentIndex((prev) => prev + 1);
-        setIntensity(0);
-        sliderX.set(0);
-      }, 300);
+        isSwipingRef.current = false;
+      }, 400);
     },
-    [currentIndex, filteredPlaces, saveActivity, sliderX, activeTrip, proposeActivity]
+    [currentIndex, filteredPlaces, saveActivity, resetSlider, activeTrip, proposeActivity]
   );
 
-  const handleSliderDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleSliderDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const sliderWidth = 280;
     const maxOffset = sliderWidth / 2 - 24;
     const normalizedValue = Math.max(-1, Math.min(1, info.offset.x / maxOffset));
@@ -223,13 +263,16 @@ export function Discover() {
 
   const handleSliderDragEnd = () => {
     if (intensity < -0.65) {
-      removeCard("left");
+      removeCard("left", intensity);
     } else if (intensity > 0.65) {
-      removeCard("right");
+      removeCard("right", intensity);
     } else {
+      // Below threshold — spring back to center
       setIntensity(0);
+      animate(sliderX, 0, { type: "spring", stiffness: 500, damping: 30 });
+      // Also remount to clear stale drag offset so next drag starts from center
+      setSliderKey((k) => k + 1);
     }
-    sliderX.set(0);
   };
 
   const currentPlace = filteredPlaces[currentIndex];
@@ -318,13 +361,15 @@ export function Discover() {
               />
             )}
 
-            {/* Current Card */}
-            <SwipeCard
-              place={currentPlace}
-              onSwipe={removeCard}
-              intensity={intensity}
-              key={currentPlace.id}
-            />
+            {/* Current Card with AnimatePresence for smooth enter/exit */}
+            <AnimatePresence mode="wait">
+              <SwipeCard
+                place={currentPlace}
+                onSwipe={(dir) => removeCard(dir, intensity)}
+                intensity={intensity}
+                key={currentPlace.id + "-" + currentIndex}
+              />
+            </AnimatePresence>
           </>
         ) : (
           <div className="h-full flex items-center justify-center">
@@ -376,11 +421,13 @@ export function Discover() {
           {/* Center indicator line */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-8 bg-zinc-300 dark:bg-zinc-700/50" />
 
-          {/* Draggable Circle */}
+          {/* Draggable Circle — key forces remount so drag offset resets cleanly */}
           <motion.div
+            key={sliderKey}
             drag="x"
             dragConstraints={{ left: -130, right: 130 }}
             dragElastic={0.05}
+            dragMomentum={false}
             onDrag={handleSliderDrag}
             onDragEnd={handleSliderDragEnd}
             style={{ x: sliderX }}
@@ -415,11 +462,13 @@ interface SwipeCardProps {
 function SwipeCard({ place, onSwipe, intensity }: SwipeCardProps) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
-  const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
+  const swipeDirectionRef = useRef<"left" | "right">("right");
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (Math.abs(info.offset.x) > 120) {
-      onSwipe(info.offset.x > 0 ? "right" : "left");
+      const direction = info.offset.x > 0 ? "right" : "left";
+      swipeDirectionRef.current = direction;
+      onSwipe(direction);
     }
   };
 
@@ -434,13 +483,22 @@ function SwipeCard({ place, onSwipe, intensity }: SwipeCardProps) {
     <motion.div
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
-      style={{ x, rotate, opacity }}
+      style={{ x, rotate }}
       onDragEnd={handleDragEnd}
       className="absolute inset-0 cursor-grab active:cursor-grabbing"
       whileTap={{ cursor: "grabbing" }}
+      initial={{ scale: 0.95, opacity: 0 }}
       animate={{
         x: intensity * 45,
         rotate: intensity * 8,
+        opacity: 1,
+        scale: 1,
+      }}
+      exit={{
+        x: swipeDirectionRef.current === "left" ? -500 : 500,
+        rotate: swipeDirectionRef.current === "left" ? -30 : 30,
+        opacity: 0,
+        transition: { type: "spring", stiffness: 200, damping: 30, duration: 0.35 },
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >

@@ -54,6 +54,7 @@ const CATEGORY_META: Record<string, { emoji: string; iconBg: string; barColor: s
 export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const { activeTrip, setActiveTrip } = useTrip();
   const { budgetData } = useBudget();
+  const isSolo = activeTrip ? activeTrip.members <= 1 : false;
   const [selectedCity, setSelectedCity] = useState("All");
   const [activeSubTab, setActiveSubTab] = useState<"fund" | "budget" | "settle">("fund");
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -319,16 +320,18 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
         >
           Budget
         </button>
-        <button
-          onClick={() => setActiveSubTab("settle")}
-          className={`flex-1 py-3 rounded-xl text-[15px] transition-all ${
-            activeSubTab === "settle"
-              ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md font-semibold"
-              : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium"
-          }`}
-        >
-          Settle Up
-        </button>
+        {!isSolo && (
+          <button
+            onClick={() => setActiveSubTab("settle")}
+            className={`flex-1 py-3 rounded-xl text-[15px] transition-all ${
+              activeSubTab === "settle"
+                ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md font-semibold"
+                : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium"
+            }`}
+          >
+            Settle Up
+          </button>
+        )}
       </div>
 
       {/* ===== FUND VIEW (Budget Lock) ===== */}
@@ -349,7 +352,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                 ${totalRequiredPerPerson}
               </div>
               <div className="text-[15px] text-zinc-500 dark:text-zinc-400 font-medium">
-                required per person
+                {isSolo ? "total required" : "required per person"}
               </div>
             </div>
 
@@ -470,13 +473,16 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
               )}
             </div>
             <div className="mt-3 bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-4 text-center border border-zinc-200/50 dark:border-zinc-800">
-              <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Total pool: </span>
+              <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">{isSolo ? "Total required: " : "Total pool: "}</span>
               <span className="text-zinc-900 dark:text-white text-sm font-bold">${totalRequired}</span>
-              <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium"> (${totalRequiredPerPerson} × {MEMBERS.length} people)</span>
+              {!isSolo && (
+                <span className="text-zinc-500 dark:text-zinc-400 text-sm font-medium"> (${totalRequiredPerPerson} × {MEMBERS.length} people)</span>
+              )}
             </div>
           </div>
 
           {/* Member Commitments */}
+          {!isSolo && (
           <div className="mb-5">
             <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Member Status</h3>
             <div className="bg-white dark:bg-zinc-950 rounded-[28px] p-6 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
@@ -516,6 +522,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
               </div>
             </div>
           </div>
+          )}
 
           {/* Your Commitment CTA */}
           {!memberCommitments["Helena"] ? (
@@ -1018,6 +1025,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
               </div>
 
               {/* Paid By */}
+              {!isSolo && (
               <div className="mb-4">
                 <label className="block text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">Paid by</label>
                 <div className="flex gap-2">
@@ -1041,8 +1049,10 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Split Between */}
+              {!isSolo && (
               <div className="mb-6">
                 <label className="block text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">Split between</label>
                 <div className="flex gap-2">
@@ -1079,6 +1089,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Buttons */}
               <div className="flex gap-3">

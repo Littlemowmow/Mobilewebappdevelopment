@@ -135,7 +135,7 @@ export function NewTrip() {
 
   const handleDaysChange = (index: number, delta: number) => {
     const updated = [...daysPerCity];
-    updated[index] = Math.min(14, Math.max(1, (updated[index] || 2) + delta));
+    updated[index] = Math.min(30, Math.max(1, (updated[index] || 2) + delta));
     setDaysPerCity(updated);
   };
 
@@ -291,9 +291,19 @@ export function NewTrip() {
                     >
                       &minus;
                     </button>
-                    <span className="w-10 text-center text-[15px] font-semibold text-zinc-900 dark:text-white tabular-nums">
-                      {daysPerCity[index] || 2}
-                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={daysPerCity[index] || 2}
+                      onChange={(e) => {
+                        const val = Math.min(30, Math.max(1, parseInt(e.target.value) || 1));
+                        const updated = [...daysPerCity];
+                        updated[index] = val;
+                        setDaysPerCity(updated);
+                      }}
+                      className="w-12 text-center text-[15px] font-semibold text-zinc-900 dark:text-white tabular-nums bg-transparent border-none outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
                     <button
                       type="button"
                       onClick={() => handleDaysChange(index, 1)}

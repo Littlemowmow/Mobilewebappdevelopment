@@ -31,6 +31,7 @@ export function TripDetail() {
   const [codeSent, setCodeSent] = useState(false);
 
   const trip = trips.find(t => String(t.id) === String(tripId));
+  const isSolo = trip ? trip.members <= 1 : false;
 
   // Set this as active trip when viewing
   useEffect(() => {
@@ -111,16 +112,20 @@ export function TripDetail() {
               </div>
             ))}
           </div>
-          <button
-            onClick={() => setShowAddMember(true)}
-            className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors backdrop-blur-md border-[3px] border-white/50 shadow-md"
-          >
-            <Plus className="w-5 h-5 text-white" />
-          </button>
-          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
-            <span className="text-xs text-white/80 font-medium">Code:</span>
-            <span className="text-sm text-white font-bold tracking-wide">{trip.code}</span>
-          </div>
+          {!isSolo && (
+            <button
+              onClick={() => setShowAddMember(true)}
+              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors backdrop-blur-md border-[3px] border-white/50 shadow-md"
+            >
+              <Plus className="w-5 h-5 text-white" />
+            </button>
+          )}
+          {!isSolo && (
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+              <span className="text-xs text-white/80 font-medium">Code:</span>
+              <span className="text-sm text-white font-bold tracking-wide">{trip.code}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -149,17 +154,19 @@ export function TripDetail() {
             <DollarSign className="w-4 h-4" />
             Budget
           </button>
-          <button
-            onClick={() => setActiveTab("votes")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-semibold transition-all ${
-              activeTab === "votes"
-                ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md"
-                : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            }`}
-          >
-            <Vote className="w-4 h-4" />
-            Votes
-          </button>
+          {!isSolo && (
+            <button
+              onClick={() => setActiveTab("votes")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-semibold transition-all ${
+                activeTab === "votes"
+                  ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md"
+                  : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              }`}
+            >
+              <Vote className="w-4 h-4" />
+              Votes
+            </button>
+          )}
         </div>
       </div>
 
@@ -167,7 +174,7 @@ export function TripDetail() {
       <div>
         {activeTab === "schedule" && <ScheduleTab />}
         {activeTab === "budget" && <BudgetTab />}
-        {activeTab === "votes" && <VotesTab />}
+        {activeTab === "votes" && !isSolo && <VotesTab />}
       </div>
 
       {/* Add Member Modal */}
