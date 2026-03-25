@@ -31,6 +31,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
   const [selectedDay, setSelectedDay] = useState(0);
   const [showAddActivity, setShowAddActivity] = useState(false);
   const [addedActivities, setAddedActivities] = useState<Record<string, Activity[]>>({});
+  const [cityAttendance, setCityAttendance] = useState<Record<string, string[]>>({});
 
   // Add activity form state
   const [formTitle, setFormTitle] = useState("");
@@ -135,6 +136,47 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
           </div>
         ))}
       </div>
+
+      {/* Who's joining this city — only show for group trips with multiple cities */}
+      {activeTrip.members > 1 && activeTrip.cities.length > 1 && (
+        <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-4 mb-5 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-bold tracking-wider uppercase">
+              Who's joining in {currentCity?.name}?
+            </span>
+            <span className="text-xs text-teal-600 dark:text-teal-400 font-semibold">
+              {cityAttendance[currentCity?.name || ""]?.length || activeTrip.members}/{activeTrip.members}
+            </span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {activeTrip.memberInitials.map((initial, idx) => {
+              const cityName = currentCity?.name || "";
+              const isJoining = (cityAttendance[cityName] || activeTrip.memberInitials).includes(initial);
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setCityAttendance(prev => {
+                      const current = prev[cityName] || [...activeTrip.memberInitials];
+                      const updated = isJoining
+                        ? current.filter(i => i !== initial)
+                        : [...current, initial];
+                      return { ...prev, [cityName]: updated };
+                    });
+                  }}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
+                    isJoining
+                      ? `${activeTrip.memberColors[idx]} text-white border-white dark:border-zinc-950 shadow-md`
+                      : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 border-zinc-300 dark:border-zinc-700 opacity-50"
+                  }`}
+                >
+                  {initial}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Day Pills */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-1 scrollbar-hide">

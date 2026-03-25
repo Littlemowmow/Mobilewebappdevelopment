@@ -837,7 +837,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
       )}
 
       {/* ===== SETTLE UP VIEW ===== */}
-      {activeSubTab === "settle" && (
+      {activeSubTab === "settle" && !isSolo && (
         <div>
           <div className="text-center mb-6">
             <div className="text-5xl mb-3">🤝</div>
