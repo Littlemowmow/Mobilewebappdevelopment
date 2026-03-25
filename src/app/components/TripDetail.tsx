@@ -112,14 +112,12 @@ export function TripDetail() {
               </div>
             ))}
           </div>
-          {!isSolo && (
-            <button
-              onClick={() => setShowAddMember(true)}
-              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors backdrop-blur-md border-[3px] border-white/50 shadow-md"
-            >
-              <Plus className="w-5 h-5 text-white" />
-            </button>
-          )}
+          <button
+            onClick={() => setShowAddMember(true)}
+            className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors backdrop-blur-md border-[3px] border-white/50 shadow-md"
+          >
+            <Plus className="w-5 h-5 text-white" />
+          </button>
           {!isSolo && (
             <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
               <span className="text-xs text-white/80 font-medium">Code:</span>
