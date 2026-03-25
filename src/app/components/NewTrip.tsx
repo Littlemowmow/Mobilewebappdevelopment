@@ -79,6 +79,7 @@ export function NewTrip() {
   const [daysPerCity, setDaysPerCity] = useState<number[]>([2]);
   const [budget, setBudget] = useState("");
   const [groupSize, setGroupSize] = useState(1);
+  const [tripVibe, setTripVibe] = useState<"luxury" | "modest" | "budget">("modest");
   const [submitting, setSubmitting] = useState(false);
   const { createTrip } = useTrip();
   const navigate = useNavigate();
@@ -140,19 +141,30 @@ export function NewTrip() {
   };
 
   const handleCreateTrip = async () => {
-    if (!tripName.trim() || !startDate || !endDate) return;
-    setSubmitting(true);
     const filteredDests = destinations.filter((d) => d.trim() !== "");
+    if (!tripName.trim() || filteredDests.length === 0) return;
+    setSubmitting(true);
     const filteredDays = destinations.reduce<number[]>((acc, d, i) => {
       if (d.trim() !== "") acc.push(daysPerCity[i] || 2);
       return acc;
     }, []);
+    // If no dates set, compute default duration from days-per-city
+    let effectiveStart = startDate;
+    let effectiveEnd = endDate;
+    if (!effectiveStart || !effectiveEnd) {
+      const totalDays = filteredDays.reduce((s, d) => s + d, 0);
+      const start = new Date();
+      const end = new Date();
+      end.setDate(end.getDate() + totalDays - 1);
+      effectiveStart = effectiveStart || start.toISOString().split("T")[0];
+      effectiveEnd = effectiveEnd || end.toISOString().split("T")[0];
+    }
     const { error, tripId } = await createTrip({
       title: tripName.trim(),
       destinations: filteredDests,
       daysPerCity: filteredDays,
-      start_date: startDate,
-      end_date: endDate,
+      start_date: effectiveStart,
+      end_date: effectiveEnd,
       budget: budget ? parseFloat(budget) : undefined,
       currency: "USD",
     });
@@ -189,7 +201,7 @@ export function NewTrip() {
       {/* Dates */}
       <div className="grid grid-cols-2 gap-3 mb-5">
         <div>
-          <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Start Date</label>
+          <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Start Date (optional)</label>
           <input
             type="date"
             value={startDate}
@@ -198,7 +210,7 @@ export function NewTrip() {
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">End Date</label>
+          <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">End Date (optional)</label>
           <input
             type="date"
             value={endDate}
@@ -307,7 +319,7 @@ export function NewTrip() {
                     <button
                       type="button"
                       onClick={() => handleDaysChange(index, 1)}
-                      disabled={(daysPerCity[index] || 2) >= 14}
+                      disabled={(daysPerCity[index] || 2) >= 30}
                       className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-semibold text-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       +
@@ -374,10 +386,40 @@ export function NewTrip() {
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 ml-1">You can add members by name later from the trip page</p>
       </div>
 
+      {/* Trip Vibe */}
+      <div className="mb-8">
+        <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Trip Vibe</label>
+        <div className="flex gap-2 mb-3">
+          {([
+            { key: "luxury" as const, label: "Luxury", emoji: "\uD83D\uDC8E" },
+            { key: "modest" as const, label: "Modest", emoji: "\u2728" },
+            { key: "budget" as const, label: "Budget", emoji: "\uD83D\uDCB0" },
+          ]).map((vibe) => (
+            <button
+              key={vibe.key}
+              type="button"
+              onClick={() => setTripVibe(vibe.key)}
+              className={`flex-1 py-3 rounded-2xl text-[14px] font-semibold transition-all ${
+                tripVibe === vibe.key
+                  ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md"
+                  : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800"
+              }`}
+            >
+              {vibe.emoji} {vibe.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 ml-1">
+          {tripVibe === "luxury" && "Fine dining, premium stays, VIP experiences"}
+          {tripVibe === "modest" && "Great food, comfortable stays, popular spots"}
+          {tripVibe === "budget" && "Street food, hostels, free activities"}
+        </p>
+      </div>
+
       {/* Create Button */}
       <button
         onClick={handleCreateTrip}
-        disabled={submitting || !tripName.trim() || !startDate || !endDate}
+        disabled={submitting || !tripName.trim() || !destinations.some(d => d.trim() !== "")}
         className="w-full bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-4 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Creating..." : "Create Trip"}
