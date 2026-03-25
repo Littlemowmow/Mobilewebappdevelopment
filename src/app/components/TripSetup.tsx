@@ -27,8 +27,8 @@ const QUESTIONS: Question[] = [
     title: "Are flights booked?",
     subtitle: "Or still looking for the best deals",
     followUp: {
-      yes: "How much were flights per person?",
-      no: "No worries — we'll estimate flight costs for you.",
+      yes: "Each member will enter their own flight details when they join.",
+      no: "No worries — each member can add flights later.",
     },
   },
   {
@@ -134,33 +134,6 @@ export function TripSetup() {
         <p className="text-center text-zinc-500 dark:text-zinc-400 text-[15px] mb-10">
           {question.subtitle}
         </p>
-
-        {/* Flight cost + flight number input */}
-        {question.id === "flights" && currentAnswer === "yes" && showFollowUp && (
-          <div className="mb-6 space-y-3">
-            <div className="relative max-w-[220px] mx-auto">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-lg font-medium">$</span>
-              <input
-                type="number"
-                value={flightCost}
-                onChange={(e) => setFlightCost(e.target.value)}
-                placeholder="0"
-                className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-9 pr-4 py-4 text-center text-2xl font-bold text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-            <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">per person, round trip</p>
-            <div className="max-w-[260px] mx-auto">
-              <input
-                type="text"
-                value={flightNumber}
-                onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
-                placeholder="Flight # (e.g. AA 432)"
-                className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-3 text-center text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-1.5">We'll track it and text you updates</p>
-            </div>
-          </div>
-        )}
 
         {/* Hotel cost per night input */}
         {question.id === "hotels" && currentAnswer === "yes" && showFollowUp && (

@@ -21,6 +21,10 @@ export function JoinTrip() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [tripName, setTripName] = useState("");
+  const [flightNumber, setFlightNumber] = useState("");
+  const [flightCost, setFlightCost] = useState("");
+  const [arrivalDate, setArrivalDate] = useState("");
+  const [departureDate, setDepartureDate] = useState("");
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,6 +234,59 @@ export function JoinTrip() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Flight Info */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Loader2 className="w-4 h-4 text-teal-500" style={{ animation: 'none' }} />
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Your Flight Details</label>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 font-normal">(optional)</span>
+          </div>
+
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={flightNumber}
+              onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
+              placeholder="Flight # (e.g. AA 432)"
+              className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+
+            <div className="relative">
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-[15px]">$</span>
+              <input
+                type="number"
+                value={flightCost}
+                onChange={(e) => setFlightCost(e.target.value)}
+                placeholder="Flight cost (round trip)"
+                className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-10 pr-5 py-4 text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1 ml-1">Arriving</label>
+                <input
+                  type="date"
+                  value={arrivalDate}
+                  onChange={(e) => setArrivalDate(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-3 text-[14px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1 ml-1">Departing</label>
+                <input
+                  type="date"
+                  value={departureDate}
+                  onChange={(e) => setDepartureDate(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-3 text-[14px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 ml-1">We'll track your flight and text you landing updates</p>
           </div>
         </div>
 
