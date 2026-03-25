@@ -154,7 +154,34 @@ export function Discover() {
         }
       }
 
-      // No trip and DB is empty — just show what's in Supabase (no random cities)
+      // Free mode (no trip): if DB has few results, fetch a variety of popular cities
+      if (activities.length < 10 && tripCities.length === 0) {
+        const popularCities = ["Barcelona", "Paris", "Rome", "Istanbul", "Marrakech", "Dubai", "Seoul", "Bali"];
+        // Pick 3 random cities to give variety each time
+        const picked = popularCities.sort(() => Math.random() - 0.5).slice(0, 3);
+        for (const city of picked) {
+          if (cancelled) break;
+          try {
+            const res = await fetch(`/api/activities?city=${encodeURIComponent(city)}`);
+            if (res.ok) {
+              const apiData = await res.json();
+              const apiPlaces: Place[] = (apiData.activities || []).map((a: any) => ({
+                id: a.id || `api_${Math.random()}`,
+                name: a.name,
+                location: a.neighborhood ? `${a.neighborhood}, ${a.city}` : a.city,
+                description: a.description || `A popular spot in ${a.city}.`,
+                price: a.price || "",
+                duration: a.duration || "",
+                rating: a.rating || 8.5,
+                tags: a.tags?.length ? a.tags : [a.category || "SideQuest"],
+                image: a.image || "",
+                city: a.city,
+              }));
+              activities = [...activities, ...apiPlaces];
+            }
+          } catch { /* silent */ }
+        }
+      }
 
       if (!cancelled) {
         // Shuffle for variety
@@ -291,11 +318,8 @@ export function Discover() {
     } else if (intensity > 0.65) {
       removeCard("right", intensity);
     } else {
-      // Below threshold — spring back to center
+      // Below threshold — dragSnapToOrigin handles the spring back
       setIntensity(0);
-      animate(sliderX, 0, { type: "spring", stiffness: 500, damping: 30 });
-      // Also remount to clear stale drag offset so next drag starts from center
-      setSliderKey((k) => k + 1);
     }
   };
 
@@ -452,9 +476,9 @@ export function Discover() {
             dragConstraints={{ left: -130, right: 130 }}
             dragElastic={0.05}
             dragMomentum={false}
+            dragSnapToOrigin
             onDrag={handleSliderDrag}
             onDragEnd={handleSliderDragEnd}
-            style={{ x: sliderX }}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] rounded-full bg-zinc-900 dark:bg-white shadow-2xl cursor-grab active:cursor-grabbing flex items-center justify-center z-10"
             animate={{
               scale: Math.abs(intensity) > 0.4 ? 1.15 : 1,
