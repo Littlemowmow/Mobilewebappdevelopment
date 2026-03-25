@@ -154,31 +154,7 @@ export function Discover() {
         }
       }
 
-      // Also try fetching general activities if no trip and DB is empty
-      if (activities.length < 5 && tripCities.length === 0) {
-        for (const city of ["Barcelona", "Tokyo", "Paris", "New York"]) {
-          try {
-            const res = await fetch(`/api/activities?city=${encodeURIComponent(city)}`);
-            if (res.ok) {
-              const apiData = await res.json();
-              const apiPlaces: Place[] = (apiData.activities || []).map((a: any) => ({
-                id: a.id || `api_${Math.random()}`,
-                name: a.name,
-                location: a.neighborhood ? `${a.neighborhood}, ${a.city}` : a.city,
-                description: a.description || `A popular spot in ${a.city}.`,
-                price: a.price || "",
-                duration: a.duration || "",
-                rating: a.rating || 8.5,
-                tags: a.tags?.length ? a.tags : [a.category || "SideQuest"],
-                image: a.image || "",
-                city: a.city,
-              }));
-              activities = [...activities, ...apiPlaces];
-              if (activities.length >= 20) break;
-            }
-          } catch { /* silent */ }
-        }
-      }
+      // No trip and DB is empty — just show what's in Supabase (no random cities)
 
       if (!cancelled) {
         // Shuffle for variety
@@ -220,30 +196,14 @@ export function Discover() {
     }
   }, [activeTrip, sliderX]);
 
-  // Derive unique cities from fetched places
-  const derivedCities = Array.from(
-    new Set(
-      places
-        .map((p) => {
-          const parts = p.location.split(", ");
-          return parts[parts.length - 1];
-        })
-        .filter(Boolean)
-    )
-  );
-
-  // Use cities from active trip if available, otherwise derive from data
+  // City pills only show when there's an active trip — no random city pills
   const cities = activeTrip
     ? activeTrip.cities.map((city, index) => ({
         name: city.name,
         flag: city.flag,
         active: activeCity ? activeCity === city.name : index === 0,
       }))
-    : derivedCities.map((cityName, index) => ({
-        name: cityName,
-        flag: "",
-        active: activeCity ? activeCity === cityName : index === 0,
-      }));
+    : [];
 
   // Filter places by active city
   const activeCityName = cities.find((c) => c.active)?.name;
