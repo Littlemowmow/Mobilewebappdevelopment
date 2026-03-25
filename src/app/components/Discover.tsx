@@ -8,8 +8,14 @@ import { useTrip } from "../context/TripContext";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
+// Cache for fetched activities per city — avoids refetching on city switch
+const activityCache: Record<string, Place[]> = {};
+
 // Fetch activities directly from free APIs (no serverless function needed)
 async function fetchLiveActivities(cityName: string): Promise<Place[]> {
+  // Return cached if available
+  if (activityCache[cityName]?.length > 0) return activityCache[cityName];
+
   const results: Place[] = [];
 
   // Step 1: Geocode city
@@ -24,7 +30,20 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
     lon = parseFloat(geoData[0].lon);
   } catch { return []; }
 
-  // Step 2: Fetch from Overpass/OpenStreetMap (free, no key, always works)
+  // Fetch Overpass + Wikipedia in PARALLEL for speed
+  const [osmResults, wikiResults] = await Promise.all([
+    fetchOverpassPlaces(lat, lon, cityName),
+    fetchWikipediaPlaces(lat, lon, cityName),
+  ]);
+  results.push(...osmResults, ...wikiResults);
+
+  // Cache and return
+  activityCache[cityName] = results;
+  return results;
+}
+
+async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): Promise<Place[]> {
+  const results: Place[] = [];
   try {
     const query = `[out:json][timeout:12];(
       node["tourism"~"attraction|museum|viewpoint|artwork|gallery"](around:10000,${lat},${lon});
@@ -89,8 +108,11 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
       }
     }
   } catch { /* silent */ }
+  return results;
+}
 
-  // Step 3: Fetch from Wikipedia geosearch for additional spots with descriptions
+async function fetchWikipediaPlaces(lat: number, lon: number, cityName: string): Promise<Place[]> {
+  const results: Place[] = [];
   try {
     const wikiRes = await fetch(
       `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=10000&gslimit=15&format=json&origin=*`
