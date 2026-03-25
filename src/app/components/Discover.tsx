@@ -98,34 +98,98 @@ export function Discover() {
   // Key to force-remount the slider draggable, clearing stale drag offset
   const [sliderKey, setSliderKey] = useState(0);
 
-  // Fetch activities from Supabase
+  // Fetch activities — from Supabase first, fall back to live API for trip cities
   useEffect(() => {
     let cancelled = false;
 
     async function fetchActivities() {
       setLoading(true);
       setFetchError(false);
-      const { data, error } = await supabase
-        .from("activities")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
+
+      // Get cities to fetch for (from active trip or all)
+      const tripCities = activeTrip?.cities.map(c => c.name) || [];
+
+      // Fetch from Supabase
+      let query = supabase.from("activities").select("*").order("created_at", { ascending: false }).limit(50);
+      if (tripCities.length > 0) {
+        // Filter to trip cities
+        query = query.in("city", tripCities);
+      }
+      const { data, error } = await query;
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Failed to fetch activities:", error);
+        setFetchError(true);
+        setPlaces([]);
+        setLoading(false);
+        return;
+      }
+
+      let activities = (data || []).map(mapActivityToPlace);
+
+      // If we got very few results and we have trip cities, fetch from live API
+      if (activities.length < 5 && tripCities.length > 0) {
+        for (const city of tripCities) {
+          try {
+            const res = await fetch(`/api/activities?city=${encodeURIComponent(city)}`);
+            if (res.ok) {
+              const apiData = await res.json();
+              const apiPlaces: Place[] = (apiData.activities || []).map((a: any) => ({
+                id: a.id || `api_${Math.random()}`,
+                name: a.name,
+                location: a.neighborhood ? `${a.neighborhood}, ${a.city}` : a.city,
+                description: a.description || `A popular spot in ${a.city}.`,
+                price: a.price || "",
+                duration: a.duration || "",
+                rating: a.rating || 8.5,
+                tags: a.tags?.length ? a.tags : [a.category || "SideQuest"],
+                image: a.image || "",
+                city: a.city,
+              }));
+              activities = [...activities, ...apiPlaces];
+            }
+          } catch { /* silent */ }
+        }
+      }
+
+      // Also try fetching general activities if no trip and DB is empty
+      if (activities.length < 5 && tripCities.length === 0) {
+        for (const city of ["Barcelona", "Tokyo", "Paris", "New York"]) {
+          try {
+            const res = await fetch(`/api/activities?city=${encodeURIComponent(city)}`);
+            if (res.ok) {
+              const apiData = await res.json();
+              const apiPlaces: Place[] = (apiData.activities || []).map((a: any) => ({
+                id: a.id || `api_${Math.random()}`,
+                name: a.name,
+                location: a.neighborhood ? `${a.neighborhood}, ${a.city}` : a.city,
+                description: a.description || `A popular spot in ${a.city}.`,
+                price: a.price || "",
+                duration: a.duration || "",
+                rating: a.rating || 8.5,
+                tags: a.tags?.length ? a.tags : [a.category || "SideQuest"],
+                image: a.image || "",
+                city: a.city,
+              }));
+              activities = [...activities, ...apiPlaces];
+              if (activities.length >= 20) break;
+            }
+          } catch { /* silent */ }
+        }
+      }
 
       if (!cancelled) {
-        if (error) {
-          console.error("Failed to fetch activities:", error);
-          setPlaces([]);
-          setFetchError(true);
-        } else {
-          setPlaces((data || []).map(mapActivityToPlace));
-        }
+        // Shuffle for variety
+        setPlaces(activities.sort(() => Math.random() - 0.5));
         setLoading(false);
       }
     }
 
     fetchActivities();
     return () => { cancelled = true; };
-  }, []);
+  }, [activeTrip?.id]);
 
   const refetchActivities = useCallback(async () => {
     setLoading(true);
