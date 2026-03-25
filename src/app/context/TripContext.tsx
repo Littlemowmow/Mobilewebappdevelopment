@@ -858,6 +858,18 @@ export function TripProvider({ children }: { children: ReactNode }) {
       if (created) {
         const newTrip = mapSupabaseTripToTrip(created, 0);
         setSupabaseTrips(prev => [newTrip, ...prev]);
+
+        // Auto-sync activities from APIs for each destination city (fire and forget)
+        const dests = (created.destinations as string[]) || [];
+        for (const dest of dests) {
+          const cityName = dest.includes(":") ? dest.split(":").slice(0, -1).join(":") : dest;
+          fetch("/api/sync-activities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ city: cityName.trim() }),
+          }).catch(() => {});
+        }
+
         return { error: null, tripId: created.id };
       }
       return { error: null };

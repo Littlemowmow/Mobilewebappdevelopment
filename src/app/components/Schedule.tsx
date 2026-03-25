@@ -161,6 +161,15 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
       </div>
 
       {/* Activities */}
+      {currentActivities.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-5xl mb-4">🗺️</div>
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No activities yet</h3>
+          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] mb-6 max-w-[250px] mx-auto">
+            Head to Discover to find activities for {currentCity?.name || "this city"}, or add one manually below
+          </p>
+        </div>
+      ) : (
       <div className="space-y-4 relative">
         {/* Timeline line */}
         <div className="absolute left-[26px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-zinc-200 dark:from-zinc-800 via-zinc-200 dark:via-zinc-800 to-transparent" />
@@ -216,6 +225,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
           );
         })}
       </div>
+      )}
 
       {/* Add Activity Button */}
       <button
