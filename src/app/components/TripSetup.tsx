@@ -48,11 +48,11 @@ const QUESTIONS: Question[] = [
     icon: DollarSign,
     iconBg: "bg-orange-50 dark:bg-orange-900/30",
     iconColor: "text-orange-600 dark:text-orange-400",
-    title: "Have a budget in mind?",
-    subtitle: "Per person, roughly",
+    title: "Personal spending budget?",
+    subtitle: "For food, activities, and getting around — not flights or hotels",
     followUp: {
-      yes: "We'll help you stay within it.",
-      no: "That's fine — we'll calculate one based on what your group picks.",
+      yes: "We'll track your spending and let you know when you're close.",
+      no: "No worries — we'll estimate one based on your trip vibe and activities.",
     },
   },
 ];
@@ -170,7 +170,7 @@ export function TripSetup() {
                 className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-9 pr-4 py-4 text-center text-2xl font-bold text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
-            <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-2">per person</p>
+            <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-2">your personal spending (excludes flights & hotels)</p>
           </div>
         )}
 
