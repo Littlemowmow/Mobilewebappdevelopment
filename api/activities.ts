@@ -45,7 +45,7 @@ async function fetchOpenTripMap(city: string, lat: number, lon: number): Promise
         const category = kinds.includes('foods') ? 'Food'
           : kinds.includes('cultural') ? 'Culture'
           : kinds.includes('natural') ? 'Nature'
-          : kinds.includes('amusements') ? 'Nightlife'
+          : kinds.includes('amusements') ? 'Entertainment'
           : 'SideQuest';
 
         detailed.push({
@@ -76,7 +76,7 @@ async function fetchFoursquare(city: string, lat: number, lon: number): Promise<
   if (!apiKey) return [];
 
   try {
-    const categories = '13000,10000,16000,17000'; // Food, Arts, Landmarks, Sports
+    const categories = '13000,10000,16000,17000'; // Food (no bars), Arts, Landmarks, Sports
     const url = `https://api.foursquare.com/v3/places/search?ll=${lat},${lon}&radius=10000&categories=${categories}&limit=15&sort=RELEVANCE`;
 
     const res = await fetch(url, {
@@ -163,7 +163,7 @@ async function fetchOverpass(lat: number, lon: number, city: string): Promise<Ac
       [out:json][timeout:10];
       (
         node["tourism"~"attraction|museum|viewpoint|artwork"](around:${radius},${lat},${lon});
-        node["amenity"~"marketplace|theatre|nightclub|pub"](around:${radius},${lat},${lon});
+        node["amenity"~"marketplace|theatre"](around:${radius},${lat},${lon});
         node["leisure"~"park|garden|beach_resort"](around:${radius},${lat},${lon});
       );
       out body 20;
@@ -187,7 +187,7 @@ async function fetchOverpass(lat: number, lon: number, city: string): Promise<Ac
         const category = tourism === 'museum' ? 'Culture'
           : tourism === 'viewpoint' ? 'Views'
           : amenity === 'marketplace' ? 'Food'
-          : amenity === 'nightclub' || amenity === 'pub' ? 'Nightlife'
+          : amenity === 'theatre' ? 'Entertainment'
           : leisure === 'park' || leisure === 'garden' ? 'Nature'
           : leisure === 'beach_resort' ? 'Nature'
           : 'SideQuest';
@@ -226,6 +226,21 @@ async function geocodeCity(city: string): Promise<{ lat: number; lon: number } |
   }
 }
 
+// ========== Filter haram/inappropriate content ==========
+const BLOCKED_KEYWORDS = [
+  'bar', 'pub', 'nightclub', 'club', 'lounge', 'brewery', 'winery', 'wine',
+  'beer', 'cocktail', 'alcohol', 'liquor', 'spirits', 'tavern', 'saloon',
+  'gambling', 'casino', 'betting', 'strip', 'adult', 'hookah',
+  'pork', 'bacon', 'ham ',
+];
+
+function filterInappropriate(activities: Activity[]): Activity[] {
+  return activities.filter(act => {
+    const text = `${act.name} ${act.description} ${act.category} ${act.tags.join(' ')}`.toLowerCase();
+    return !BLOCKED_KEYWORDS.some(kw => text.includes(kw));
+  });
+}
+
 // ========== Deduplicate by name similarity ==========
 function deduplicateActivities(activities: Activity[]): Activity[] {
   const seen = new Map<string, Activity>();
@@ -261,7 +276,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Combine and deduplicate
   const all = [...otmResults, ...fsqResults, ...amdResults, ...osmResults];
-  const unique = deduplicateActivities(all);
+  const filtered = filterInappropriate(all);
+  const unique = deduplicateActivities(filtered);
 
   // Shuffle for variety
   const shuffled = unique.sort(() => Math.random() - 0.5);

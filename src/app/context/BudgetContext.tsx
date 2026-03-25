@@ -325,7 +325,7 @@ const mockBudgetData: BudgetData = {
     },
     {
       id: 19,
-      title: "Bar Cañete Tapas",
+      title: "Cañete Tapas",
       category: "Food & Drinks",
       amount: 140,
       paidBy: "Helena",

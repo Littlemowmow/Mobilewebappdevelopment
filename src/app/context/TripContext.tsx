@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { Plane, Home, Landmark, Wine, Coffee, Camera, Utensils, ShoppingBag, Train, Music, type LucideIcon } from "lucide-react";
+import { Plane, Home, Landmark, UtensilsCrossed, Coffee, Camera, Utensils, ShoppingBag, Train, Music, type LucideIcon } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "./AuthContext";
 
@@ -126,8 +126,8 @@ const barcelonaDay1: Activity[] = [
   },
   {
     id: 4,
-    icon: Wine,
-    title: "Tapas at Bar Cañete",
+    icon: UtensilsCrossed,
+    title: "Tapas at Cañete",
     time: "7:30 PM",
     duration: "2h",
     badge: "LOCAL",
@@ -180,7 +180,7 @@ const barcelonaDay2: Activity[] = [
   {
     id: 8,
     icon: Utensils,
-    title: "Dinner at Cervecería Catalana",
+    title: "Dinner at Catalana Restaurant",
     time: "8:00 PM",
     duration: "2h",
     price: "€42",
@@ -285,7 +285,7 @@ const madridDay1: Activity[] = [
   },
   {
     id: 16,
-    icon: Wine,
+    icon: UtensilsCrossed,
     title: "Tapas Crawl in Malasaña",
     time: "9:30 PM",
     duration: "2.5h",

@@ -42,7 +42,7 @@ async function geocodeCity(city: string): Promise<{ lat: number; lon: number } |
 
 async function fetchOpenTripMap(city: string, lat: number, lon: number): Promise<RawActivity[]> {
   try {
-    const kinds = 'interesting_places,cultural,natural,foods,amusements,sport';
+    const kinds = 'interesting_places,cultural,natural,foods,sport';
     const url = `https://api.opentripmap.com/0.1/en/places/radius?radius=10000&lon=${lon}&lat=${lat}&kinds=${kinds}&rate=2&limit=25&format=json`;
     const res = await fetch(url);
     if (!res.ok) return [];
@@ -60,7 +60,7 @@ async function fetchOpenTripMap(city: string, lat: number, lon: number): Promise
         const cat = k.includes('foods') ? 'food'
           : k.includes('cultural') ? 'culture'
           : k.includes('natural') ? 'nature'
-          : k.includes('amusements') ? 'nightlife'
+          : k.includes('sport') ? 'adventure'
           : 'hidden-gem';
 
         results.push({
@@ -167,9 +167,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const all = [...otm, ...fsq, ...osm];
 
+  // Filter out haram/inappropriate content
+  const BLOCKED = ['bar', 'pub', 'nightclub', 'club', 'lounge', 'brewery', 'winery', 'wine', 'beer', 'cocktail', 'alcohol', 'liquor', 'tavern', 'gambling', 'casino', 'strip', 'adult', 'hookah', 'pork', 'bacon'];
+  const clean = all.filter(a => {
+    const text = `${a.name} ${a.description} ${a.category} ${a.tags.join(' ')}`.toLowerCase();
+    return !BLOCKED.some(kw => text.includes(kw));
+  });
+
   // Deduplicate by normalized name
   const seen = new Set<string>();
-  const unique = all.filter(a => {
+  const unique = clean.filter(a => {
     const key = a.name.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (seen.has(key)) return false;
     seen.add(key);

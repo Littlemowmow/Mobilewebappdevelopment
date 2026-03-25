@@ -22,7 +22,7 @@ const votingItems = [
     title: "Bunkers del Carmel Sunset",
     location: "Barcelona",
     city: "🇪🇸",
-    description: "360° city views + wine at golden hour",
+    description: "360° city views + snacks at golden hour",
     status: "voting",
     votedCount: 2,
     totalCount: 4,
