@@ -344,7 +344,7 @@ export function Discover() {
             {/* Background cards */}
             {currentIndex + 1 < filteredPlaces.length && (
               <div
-                className="absolute inset-0 rounded-[28px] bg-zinc-300/40 dark:bg-zinc-900/60 backdrop-blur-sm"
+                className="absolute inset-0 rounded-[28px] bg-zinc-200 dark:bg-zinc-900/80"
                 style={{
                   transform: 'scale(0.95) translateY(8px)',
                   zIndex: 1,
@@ -485,7 +485,7 @@ function SwipeCard({ place, onSwipe, intensity }: SwipeCardProps) {
       dragConstraints={{ left: 0, right: 0 }}
       style={{ x, rotate }}
       onDragEnd={handleDragEnd}
-      className="absolute inset-0 cursor-grab active:cursor-grabbing"
+      className="absolute inset-0 cursor-grab active:cursor-grabbing z-10"
       whileTap={{ cursor: "grabbing" }}
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{
