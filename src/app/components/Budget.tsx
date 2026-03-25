@@ -56,7 +56,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const { budgetData } = useBudget();
   const isSolo = activeTrip ? activeTrip.members <= 1 : false;
   const [selectedCity, setSelectedCity] = useState("All");
-  const [activeSubTab, setActiveSubTab] = useState<"fund" | "budget" | "settle">("fund");
+  const isSoloInit = activeTrip ? activeTrip.members <= 1 : false;
+  const [activeSubTab, setActiveSubTab] = useState<"fund" | "budget" | "settle">(isSoloInit ? "budget" : "fund");
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
 
@@ -297,6 +298,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-5 p-1 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm dark:shadow-none border border-zinc-200 dark:border-transparent">
+        {!isSolo && (
         <button
           onClick={() => setActiveSubTab("fund")}
           className={`flex-1 py-3 rounded-xl text-[15px] transition-all ${
@@ -307,6 +309,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
         >
           Fund
         </button>
+        )}
         <button
           onClick={() => setActiveSubTab("budget")}
           className={`flex-1 py-3 rounded-xl text-[15px] transition-all ${
@@ -331,8 +334,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
         )}
       </div>
 
-      {/* ===== FUND VIEW (Budget Lock) ===== */}
-      {activeSubTab === "fund" && (
+      {/* ===== FUND VIEW (Budget Lock) — group only ===== */}
+      {activeSubTab === "fund" && !isSolo && (
         <>
           {/* Lock Status Card */}
           <div className={`rounded-[28px] p-8 mb-5 shadow-lg border ${allCommitted ? "bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/40 dark:to-teal-900/20 border-teal-200/50 dark:border-teal-800/50" : "bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 border-zinc-200/50 dark:border-zinc-800"}`}>
