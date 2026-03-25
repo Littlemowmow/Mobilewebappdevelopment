@@ -8,6 +8,91 @@ import { useTrip } from "../context/TripContext";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
+// Fetch activities directly from free APIs (no serverless function needed)
+async function fetchLiveActivities(cityName: string): Promise<Place[]> {
+  const results: Place[] = [];
+
+  // Step 1: Geocode city
+  let lat = 0, lon = 0;
+  try {
+    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1`, {
+      headers: { "Accept-Language": "en", "User-Agent": "Weventr/1.0" },
+    });
+    const geoData = await geoRes.json();
+    if (geoData.length === 0) return [];
+    lat = parseFloat(geoData[0].lat);
+    lon = parseFloat(geoData[0].lon);
+  } catch { return []; }
+
+  // Step 2: Fetch from OpenTripMap (free, no key, CORS-friendly)
+  try {
+    const kinds = "interesting_places,cultural,natural,foods,sport";
+    const listRes = await fetch(
+      `https://api.opentripmap.com/0.1/en/places/radius?radius=10000&lon=${lon}&lat=${lat}&kinds=${kinds}&rate=2&limit=15&format=json`
+    );
+    if (listRes.ok) {
+      const places = await listRes.json();
+      for (const place of places.slice(0, 10)) {
+        if (!place.name) continue;
+        try {
+          const dRes = await fetch(`https://api.opentripmap.com/0.1/en/places/xid/${place.xid}`);
+          if (!dRes.ok) continue;
+          const d = await dRes.json();
+          if (!d.name) continue;
+
+          const k = (d.kinds || "").split(",");
+          const category = k.includes("foods") ? "Food" : k.includes("cultural") ? "Culture" : k.includes("natural") ? "Nature" : "SideQuest";
+
+          results.push({
+            id: `otm_${place.xid}`,
+            name: d.name,
+            location: cityName,
+            description: d.wikipedia_extracts?.text?.slice(0, 200) || `A popular ${category.toLowerCase()} spot in ${cityName}.`,
+            price: "",
+            duration: "",
+            rating: place.rate ? Math.min(10, place.rate + 5) : 8.5,
+            tags: [category, "SideQuest"],
+            image: d.preview?.source || d.image || "",
+            city: cityName,
+          });
+        } catch { continue; }
+      }
+    }
+  } catch { /* silent */ }
+
+  // Step 3: Fetch from Overpass/OpenStreetMap (free, no key)
+  try {
+    const query = `[out:json][timeout:8];(node["tourism"~"attraction|museum|viewpoint"](around:8000,${lat},${lon});node["leisure"~"park|garden"](around:8000,${lat},${lon}););out body 10;`;
+    const osmRes = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: `data=${encodeURIComponent(query)}`,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    if (osmRes.ok) {
+      const osmData = await osmRes.json();
+      for (const el of (osmData.elements || [])) {
+        if (!el.tags?.name) continue;
+        const t = el.tags;
+        const cat = t.tourism === "museum" ? "Culture" : t.tourism === "viewpoint" ? "Views" : "Nature";
+        results.push({
+          id: `osm_${el.id}`,
+          name: t.name,
+          location: cityName,
+          description: t.description || `A ${cat.toLowerCase()} spot in ${cityName}.`,
+          price: "",
+          duration: "",
+          rating: 8.5,
+          tags: [cat, "SideQuest"],
+          image: t.image || "",
+          city: cityName,
+        });
+      }
+    }
+  } catch { /* silent */ }
+
+  return results;
+}
+
 interface Place {
   id: string;
   name: string;
@@ -129,57 +214,19 @@ export function Discover() {
 
       let activities = (data || []).map(mapActivityToPlace);
 
-      // If we got very few results and we have trip cities, fetch from live API
-      if (activities.length < 5 && tripCities.length > 0) {
-        for (const city of tripCities) {
-          try {
-            const res = await fetch(`/api/activities?city=${encodeURIComponent(city)}`);
-            if (res.ok) {
-              const apiData = await res.json();
-              const apiPlaces: Place[] = (apiData.activities || []).map((a: any) => ({
-                id: a.id || `api_${Math.random()}`,
-                name: a.name,
-                location: a.neighborhood ? `${a.neighborhood}, ${a.city}` : a.city,
-                description: a.description || `A popular spot in ${a.city}.`,
-                price: a.price || "",
-                duration: a.duration || "",
-                rating: a.rating || 8.5,
-                tags: a.tags?.length ? a.tags : [a.category || "SideQuest"],
-                image: a.image || "",
-                city: a.city,
-              }));
-              activities = [...activities, ...apiPlaces];
-            }
-          } catch { /* silent */ }
-        }
-      }
+      // If Supabase has few results, fetch directly from free APIs (client-side, no serverless)
+      const citiesToFetch = tripCities.length > 0
+        ? tripCities
+        : activities.length < 10
+          ? ["Barcelona", "Paris", "Rome", "Istanbul", "Seoul", "Bali"].sort(() => Math.random() - 0.5).slice(0, 3)
+          : [];
 
-      // Free mode (no trip): if DB has few results, fetch a variety of popular cities
-      if (activities.length < 10 && tripCities.length === 0) {
-        const popularCities = ["Barcelona", "Paris", "Rome", "Istanbul", "Marrakech", "Dubai", "Seoul", "Bali"];
-        // Pick 3 random cities to give variety each time
-        const picked = popularCities.sort(() => Math.random() - 0.5).slice(0, 3);
-        for (const city of picked) {
+      if (activities.length < 10 && citiesToFetch.length > 0) {
+        for (const city of citiesToFetch) {
           if (cancelled) break;
-          try {
-            const res = await fetch(`/api/activities?city=${encodeURIComponent(city)}`);
-            if (res.ok) {
-              const apiData = await res.json();
-              const apiPlaces: Place[] = (apiData.activities || []).map((a: any) => ({
-                id: a.id || `api_${Math.random()}`,
-                name: a.name,
-                location: a.neighborhood ? `${a.neighborhood}, ${a.city}` : a.city,
-                description: a.description || `A popular spot in ${a.city}.`,
-                price: a.price || "",
-                duration: a.duration || "",
-                rating: a.rating || 8.5,
-                tags: a.tags?.length ? a.tags : [a.category || "SideQuest"],
-                image: a.image || "",
-                city: a.city,
-              }));
-              activities = [...activities, ...apiPlaces];
-            }
-          } catch { /* silent */ }
+          const liveResults = await fetchLiveActivities(city);
+          activities = [...activities, ...liveResults];
+          if (activities.length >= 25) break;
         }
       }
 
