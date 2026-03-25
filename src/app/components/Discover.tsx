@@ -24,45 +24,14 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
     lon = parseFloat(geoData[0].lon);
   } catch { return []; }
 
-  // Step 2: Fetch from OpenTripMap (free, no key, CORS-friendly)
+  // Step 2: Fetch from Overpass/OpenStreetMap (free, no key, always works)
   try {
-    const kinds = "interesting_places,cultural,natural,foods,sport";
-    const listRes = await fetch(
-      `https://api.opentripmap.com/0.1/en/places/radius?radius=10000&lon=${lon}&lat=${lat}&kinds=${kinds}&rate=2&limit=15&format=json`
-    );
-    if (listRes.ok) {
-      const places = await listRes.json();
-      for (const place of places.slice(0, 10)) {
-        if (!place.name) continue;
-        try {
-          const dRes = await fetch(`https://api.opentripmap.com/0.1/en/places/xid/${place.xid}`);
-          if (!dRes.ok) continue;
-          const d = await dRes.json();
-          if (!d.name) continue;
-
-          const k = (d.kinds || "").split(",");
-          const category = k.includes("foods") ? "Food" : k.includes("cultural") ? "Culture" : k.includes("natural") ? "Nature" : "SideQuest";
-
-          results.push({
-            id: `otm_${place.xid}`,
-            name: d.name,
-            location: cityName,
-            description: d.wikipedia_extracts?.text?.slice(0, 200) || `A popular ${category.toLowerCase()} spot in ${cityName}.`,
-            price: "",
-            duration: "",
-            rating: place.rate ? Math.min(10, place.rate + 5) : 8.5,
-            tags: [category, "SideQuest"],
-            image: d.preview?.source || d.image || "",
-            city: cityName,
-          });
-        } catch { continue; }
-      }
-    }
-  } catch { /* silent */ }
-
-  // Step 3: Fetch from Overpass/OpenStreetMap (free, no key)
-  try {
-    const query = `[out:json][timeout:8];(node["tourism"~"attraction|museum|viewpoint"](around:8000,${lat},${lon});node["leisure"~"park|garden"](around:8000,${lat},${lon}););out body 10;`;
+    const query = `[out:json][timeout:12];(
+      node["tourism"~"attraction|museum|viewpoint|artwork|gallery"](around:10000,${lat},${lon});
+      node["historic"~"temple|shrine|castle|monument|memorial"](around:10000,${lat},${lon});
+      node["amenity"~"restaurant|cafe|marketplace|theatre"](around:10000,${lat},${lon});
+      node["leisure"~"park|garden|nature_reserve"](around:10000,${lat},${lon});
+    );out body 30;`;
     const osmRes = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       body: `data=${encodeURIComponent(query)}`,
@@ -70,22 +39,102 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
     });
     if (osmRes.ok) {
       const osmData = await osmRes.json();
+      const seen = new Set<string>();
       for (const el of (osmData.elements || [])) {
-        if (!el.tags?.name) continue;
+        // Prefer English name, fall back to local name
+        const name = el.tags?.["name:en"] || el.tags?.name;
+        if (!name || name.length < 3 || seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+
         const t = el.tags;
-        const cat = t.tourism === "museum" ? "Culture" : t.tourism === "viewpoint" ? "Views" : "Nature";
+        const tourism = t.tourism || "";
+        const historic = t.historic || "";
+        const amenity = t.amenity || "";
+        const leisure = t.leisure || "";
+
+        // Categorize
+        const cat = historic.includes("temple") || historic.includes("shrine") ? "Culture"
+          : tourism === "museum" || tourism === "gallery" ? "Culture"
+          : tourism === "viewpoint" ? "Views"
+          : historic.includes("castle") || historic.includes("monument") ? "Culture"
+          : amenity === "restaurant" || amenity === "cafe" ? "Food"
+          : amenity === "marketplace" ? "Food"
+          : amenity === "theatre" ? "Entertainment"
+          : leisure === "park" || leisure === "garden" ? "Nature"
+          : "SideQuest";
+
+        // Skip blocked content
+        const nameCheck = name.toLowerCase();
+        if (nameCheck.includes("bar") || nameCheck.includes("pub") || nameCheck.includes("nightclub")) continue;
+
+        const description = t.description
+          || t["description:en"]
+          || (historic ? `A historic ${historic} in ${cityName}.` : "")
+          || (tourism === "museum" ? `A museum in ${cityName}.` : "")
+          || (amenity === "restaurant" ? `A restaurant in ${cityName}.` : "")
+          || `A ${cat.toLowerCase()} spot in ${cityName}.`;
+
         results.push({
           id: `osm_${el.id}`,
-          name: t.name,
+          name,
           location: cityName,
-          description: t.description || `A ${cat.toLowerCase()} spot in ${cityName}.`,
-          price: "",
-          duration: "",
-          rating: 8.5,
+          description,
+          price: amenity === "restaurant" ? "$$" : t.fee === "yes" ? "$" : "",
+          duration: tourism === "museum" ? "1-2h" : historic ? "30min-1h" : "",
+          rating: 8.0 + Math.random() * 1.5,
           tags: [cat, "SideQuest"],
-          image: t.image || "",
+          image: t.image || t.wikimedia_commons || "",
           city: cityName,
         });
+      }
+    }
+  } catch { /* silent */ }
+
+  // Step 3: Fetch from Wikipedia geosearch for additional spots with descriptions
+  try {
+    const wikiRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=10000&gslimit=15&format=json&origin=*`
+    );
+    if (wikiRes.ok) {
+      const wikiData = await wikiRes.json();
+      const pages = wikiData.query?.geosearch || [];
+
+      // Filter to likely tourist spots (skip battles, administrative stuff)
+      const skipWords = ["battle", "siege", "rebellion", "district", "ward", "prefecture", "station", "line"];
+      const validPages = pages.filter((p: any) =>
+        !skipWords.some(w => p.title.toLowerCase().includes(w))
+      );
+
+      // Fetch extracts for valid pages
+      if (validPages.length > 0) {
+        const pageIds = validPages.slice(0, 8).map((p: any) => p.pageid).join("|");
+        const extractRes = await fetch(
+          `https://en.wikipedia.org/w/api.php?action=query&pageids=${pageIds}&prop=extracts|pageimages&exintro=1&explaintext=1&exsentences=2&piprop=thumbnail&pithumbsize=400&format=json&origin=*`
+        );
+        if (extractRes.ok) {
+          const extractData = await extractRes.json();
+          const pagesMap = extractData.query?.pages || {};
+          const existing = new Set(results.map(r => r.name.toLowerCase()));
+
+          for (const page of Object.values(pagesMap) as any[]) {
+            if (!page.title || existing.has(page.title.toLowerCase())) continue;
+            if (!page.extract || page.extract.length < 20) continue;
+            existing.add(page.title.toLowerCase());
+
+            results.push({
+              id: `wiki_${page.pageid}`,
+              name: page.title,
+              location: cityName,
+              description: page.extract.slice(0, 200),
+              price: "",
+              duration: "",
+              rating: 8.5 + Math.random(),
+              tags: ["Culture", "SideQuest"],
+              image: page.thumbnail?.source || "",
+              city: cityName,
+            });
+          }
+        }
       }
     }
   } catch { /* silent */ }
