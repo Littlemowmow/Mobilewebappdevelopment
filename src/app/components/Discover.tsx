@@ -8,6 +8,36 @@ import { useTrip } from "../context/TripContext";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
+/** OpenStreetMap Overpass API element */
+interface OSMElement {
+  id: number;
+  type: string;
+  lat?: number;
+  lon?: number;
+  tags?: Record<string, string>;
+}
+
+/** Wikipedia geosearch result page */
+interface WikiPage {
+  pageid: number;
+  title: string;
+  lat?: number;
+  lon?: number;
+}
+
+/** Wikipedia page extract with optional thumbnail */
+interface WikiPageExtract {
+  pageid: number;
+  title: string;
+  extract?: string;
+  thumbnail?: { source: string; width: number; height: number };
+}
+
+/** Wikimedia Commons image info */
+interface WikimediaImagePage {
+  imageinfo?: Array<{ thumburl?: string }>;
+}
+
 // Cache for fetched activities per city — avoids refetching on city switch
 const activityCache: Record<string, Place[]> = {};
 
@@ -98,7 +128,7 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
     const osmRes = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       body: `data=${encodeURIComponent(query)}`,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Weventr/1.0" },
     });
     if (osmRes.ok) {
       const osmData = await osmRes.json();

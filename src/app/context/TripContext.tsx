@@ -110,7 +110,7 @@ function generateInviteCode(): string {
   return code;
 }
 
-function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number, memberCount?: number, savedCount?: number, extraMembers?: Array<{ name: string; color: string; emoji: string }>): Trip {
+function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number, memberCount?: number, savedCount?: number, extraMembers?: Array<{ name: string; color: string; emoji: string }>, ownerInitial?: string): Trip {
   const rawDestinations = (dbTrip.destinations as string[]) || [];
   const startDate = dbTrip.start_date ? new Date(dbTrip.start_date as string) : new Date();
   const endDate = dbTrip.end_date ? new Date(dbTrip.end_date as string) : new Date();
@@ -171,7 +171,7 @@ function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number, m
     cityCount: cities.length,
     code: (dbTrip.invite_code as string) || "------",
     memberColors: ["bg-orange-500", ...(extraMembers || []).map(m => m.color)],
-    memberInitials: ["Y", ...(extraMembers || []).map(m => m.name.charAt(0).toUpperCase())],
+    memberInitials: [ownerInitial || "?", ...(extraMembers || []).map(m => m.name.charAt(0).toUpperCase())],
     memberEmojis: ["", ...(extraMembers || []).map(m => m.emoji)],
     budget: (dbTrip.budget as number) || 0,
     metadata: (dbTrip.metadata as Trip["metadata"]) || undefined,
@@ -293,7 +293,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
         user_id: null,
         role: "member",
         metadata: { name, emoji: emoji || null },
-      }).then(() => {});
+      }).then(({ error }) => {
+        if (error) console.warn('Operation failed:', error.message);
+      });
     }
   }, []);
 
@@ -332,7 +334,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
       return prev;
     });
     if (typeof tripId === "string" && tripId.includes("-")) {
-      supabase.from("trips").update({ status: status.toLowerCase() }).eq("id", tripId).then(() => {});
+      supabase.from("trips").update({ status: status.toLowerCase() }).eq("id", tripId).then(({ error }) => {
+        if (error) console.warn('Operation failed:', error.message);
+      });
     }
   }, []);
 
@@ -343,6 +347,18 @@ export function TripProvider({ children }: { children: ReactNode }) {
       return;
     }
     setLoading(true);
+
+    // Fetch current user's profile for owner initial
+    let ownerInitial = user.email?.charAt(0).toUpperCase() || "?";
+    const { data: ownerProfile } = await supabase
+      .from("profiles")
+      .select("name, display_name")
+      .eq("id", user.id)
+      .single();
+    if (ownerProfile) {
+      const ownerName = ownerProfile.display_name || ownerProfile.name || "";
+      if (ownerName) ownerInitial = ownerName.charAt(0).toUpperCase();
+    }
 
     const { data: ownedTrips, error: ownedError } = await supabase
       .from("trips")
@@ -448,6 +464,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         (memberCountMap[t.id] || 0) + 1, // +1 for owner
         savedCountMap[t.id] || 0,
         membersByTrip.get(String(t.id)),
+        ownerInitial,
       )));
     } else if (ownedError) {
       console.error("Failed to load trips:", ownedError);
@@ -555,13 +572,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
           mode: "planning",
           status: "active",
           invite_code: inviteCode,
-        }, 0);
+        }, 0, undefined, undefined, undefined, user.email?.charAt(0).toUpperCase() || "?");
         setSupabaseTrips(prev => [localTrip, ...prev]);
         return { error: null, tripId: localId };
       }
 
       if (created) {
-        const newTrip = mapSupabaseTripToTrip(created, 0);
+        const newTrip = mapSupabaseTripToTrip(created, 0, undefined, undefined, undefined, user.email?.charAt(0).toUpperCase() || "?");
         setSupabaseTrips(prev => [newTrip, ...prev]);
 
         const dests = (created.destinations as string[]) || [];

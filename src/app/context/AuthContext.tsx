@@ -30,13 +30,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase
+  const loadProfile = async (userId: string, userEmail?: string | null) => {
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .single()
-    if (data) setProfile(data)
+    if (data) {
+      setProfile(data)
+    } else if (error) {
+      console.warn("Failed to load profile:", error.message)
+      // Set a fallback profile so the app remains functional
+      setProfile({
+        id: userId,
+        email: userEmail ?? null,
+        name: userEmail?.split("@")[0] ?? null,
+        username: null,
+        display_name: userEmail?.split("@")[0] ?? null,
+        avatar_url: null,
+        bio: null,
+        xp: null,
+        rank: null,
+      })
+    }
   }
 
   useEffect(() => {
@@ -44,18 +60,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timeout = setTimeout(() => {
       didTimeout = true
       setLoading(false)
-    }, 8000)
+    }, 5000)
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timeout)
       if (!didTimeout) {
         setUser(session?.user ?? null)
-        if (session?.user) loadProfile(session.user.id)
+        if (session?.user) loadProfile(session.user.id, session.user.email)
         setLoading(false)
       } else {
         // Timeout already fired, but session came through — still update user
         setUser(session?.user ?? null)
-        if (session?.user) loadProfile(session.user.id)
+        if (session?.user) loadProfile(session.user.id, session.user.email)
       }
     }).catch(() => {
       clearTimeout(timeout)
@@ -65,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        loadProfile(session.user.id)
+        loadProfile(session.user.id, session.user.email)
       } else {
         setProfile(null)
       }

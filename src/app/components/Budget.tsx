@@ -60,15 +60,18 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [activeSubTab, setActiveSubTab] = useState<"fund" | "budget" | "settle">(isSoloInit ? "budget" : "fund");
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
 
   // Load persisted expenses from Supabase on mount
   useEffect(() => {
     if (!activeTrip || !user) return;
+    setLoadingExpenses(true);
     supabase.from("trip_expenses")
       .select("*")
       .eq("trip_id", String(activeTrip.id))
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.warn("Failed to load expenses:", error.message);
         if (data) {
           setLocalExpenses(data.map((e: Record<string, unknown>) => ({
             id: e.id as number,
@@ -85,6 +88,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             emoji: CATEGORY_META[e.category as string]?.emoji || "📦",
           })));
         }
+        setLoadingExpenses(false);
       });
   }, [activeTrip?.id, user]);
 
@@ -679,6 +683,41 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
       {/* ===== BUDGET VIEW ===== */}
       {activeSubTab === "budget" && (
         <>
+          {/* Welcome state: no budget set and no expenses */}
+          {totalBudget === 0 && localExpenses.length === 0 && budgetData.transactions.length === 0 && (
+            <div className="bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 rounded-[28px] p-8 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800 text-center">
+              <div className="text-5xl mb-4">💰</div>
+              <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">Set your trip budget to get started</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[15px] mb-6">Track spending, split costs, and stay on budget throughout your trip.</p>
+              <div className="relative mb-4 max-w-[200px] mx-auto">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-lg font-semibold">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={totalBudgetDraft !== "0" ? totalBudgetDraft : ""}
+                  onChange={(e) => setTotalBudgetDraft(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-10 pr-5 py-4 text-2xl font-bold text-zinc-900 dark:text-white text-center placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  const val = parseInt(totalBudgetDraft);
+                  if (!isNaN(val) && val > 0) {
+                    setTotalBudget(val);
+                    if (activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-")) {
+                      supabase.from("trips").update({ budget: val }).eq("id", activeTrip.id).then(() => {});
+                    }
+                  }
+                }}
+                disabled={!totalBudgetDraft || parseInt(totalBudgetDraft) <= 0}
+                className="w-full max-w-[200px] bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-3.5 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Set Budget
+              </button>
+            </div>
+          )}
+
           {/* City Pills */}
           <div className="flex gap-2 mb-6 overflow-x-auto pb-1 scrollbar-hide">
             <button
@@ -1019,7 +1058,12 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
           {/* Recent Transactions */}
           <div>
             <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Recent Transactions</h3>
-            {filteredTransactions.length === 0 ? (
+            {loadingExpenses ? (
+              <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-10 shadow-md border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center gap-3">
+                <div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-600 border-t-teal-500 rounded-full animate-spin" />
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading expenses…</span>
+              </div>
+            ) : filteredTransactions.length === 0 ? (
               <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-10 shadow-md border border-zinc-200/50 dark:border-zinc-800 text-center">
                 <div className="text-6xl mb-4">💸</div>
                 <h4 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No expenses yet</h4>
