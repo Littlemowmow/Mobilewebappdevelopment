@@ -87,17 +87,17 @@ export function TripDetail() {
 
         {/* Stats */}
         <div className="flex items-center gap-4 mb-5">
-          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+          <div className="flex items-center gap-2 bg-white/25 backdrop-blur-md px-3.5 py-2.5 rounded-xl border border-white/30 shadow-lg">
             <Users className="w-4 h-4 text-white" strokeWidth={2} />
-            <span className="text-sm font-medium text-white">{trip.members}</span>
+            <span className="text-sm font-semibold text-white">{trip.members}</span>
           </div>
-          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+          <div className="flex items-center gap-2 bg-white/25 backdrop-blur-md px-3.5 py-2.5 rounded-xl border border-white/30 shadow-lg">
             <MapPin className="w-4 h-4 text-white" strokeWidth={2} />
-            <span className="text-sm font-medium text-white">{trip.cityCount} cities</span>
+            <span className="text-sm font-semibold text-white">{trip.cityCount} cities</span>
           </div>
-          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+          <div className="flex items-center gap-2 bg-white/25 backdrop-blur-md px-3.5 py-2.5 rounded-xl border border-white/30 shadow-lg">
             <Bookmark className="w-4 h-4 text-white" strokeWidth={2} />
-            <span className="text-sm font-medium text-white">{trip.saved}</span>
+            <span className="text-sm font-semibold text-white">{trip.saved}</span>
           </div>
         </div>
 
@@ -129,8 +129,8 @@ export function TripDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="sticky top-0 z-10 bg-zinc-50 dark:bg-black px-5 pt-4 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/50">
-        <div className="flex gap-2 bg-white dark:bg-zinc-900 rounded-2xl p-1 shadow-sm dark:shadow-none border border-zinc-200 dark:border-transparent">
+      <div className="sticky top-0 z-10 bg-zinc-50 dark:bg-black px-5 pt-4 pb-3 border-b border-zinc-200/60 dark:border-zinc-700/50/50">
+        <div className="flex gap-2 bg-white dark:bg-zinc-900 rounded-2xl p-1 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] border border-zinc-200 dark:border-zinc-700/50">
           <button
             onClick={() => setActiveTab("schedule")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-semibold transition-all ${
@@ -183,7 +183,7 @@ export function TripDetail() {
             className="absolute inset-0 bg-black/60"
             onClick={() => setShowAddMember(false)}
           />
-          <div className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[28px] p-6 animate-in slide-in-from-bottom duration-300">
+          <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-t-[28px] p-6 animate-in slide-in-from-bottom duration-300">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">Add Member</h2>
@@ -203,7 +203,7 @@ export function TripDetail() {
                 value={newMemberName}
                 onChange={(e) => setNewMemberName(e.target.value)}
                 placeholder="Their name"
-                className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-[15px] focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+                className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-[15px] focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
               />
             </div>
 
@@ -215,7 +215,7 @@ export function TripDetail() {
                 value={newMemberPhone}
                 onChange={(e) => setNewMemberPhone(e.target.value)}
                 placeholder="+1 (555) 000-0000"
-                className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-[15px] focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
+                className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-[15px] focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all"
               />
             </div>
 
@@ -261,7 +261,7 @@ export function TripDetail() {
 
             {/* Send Code Option */}
             {newMemberPhone.trim() && trip && (
-              <div className="mb-5 bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-200/50 dark:border-zinc-800">
+              <div className="mb-5 bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-200/50 dark:border-zinc-700/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Send className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
