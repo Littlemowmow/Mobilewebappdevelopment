@@ -103,9 +103,10 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
           : leisure === "park" || leisure === "garden" ? "Nature"
           : "SideQuest";
 
-        // Skip blocked content
-        const nameCheck = name.toLowerCase();
-        if (nameCheck.includes("bar") || nameCheck.includes("pub") || nameCheck.includes("nightclub")) continue;
+        // Skip blocked content (haram: bars, pubs, alcohol, gambling)
+        const fullCheck = `${name} ${description} ${amenity}`.toLowerCase();
+        const blocked = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "lounge", "hookah", "casino", "gambling", "strip"];
+        if (blocked.some(kw => fullCheck.includes(kw))) continue;
 
         const description = t.description
           || t["description:en"]

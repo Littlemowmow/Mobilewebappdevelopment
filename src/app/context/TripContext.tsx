@@ -235,7 +235,7 @@ const barcelonaDay4: Activity[] = [
   {
     id: 12,
     icon: Coffee,
-    title: "Breakfast at Milk Bar",
+    title: "Breakfast at Milk Cafe",
     time: "9:00 AM",
     duration: "1h",
     price: "€15",
