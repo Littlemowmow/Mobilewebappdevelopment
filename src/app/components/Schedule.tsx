@@ -28,7 +28,7 @@ const TYPE_CONFIG: Record<string, { badge: string; badgeColor: string; icon: Luc
 };
 
 export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
-  const { activeTrip, setActiveTrip } = useTrip();
+  const { activeTrip, setActiveTrip, approvedActivities } = useTrip();
   const { user } = useAuth();
   const [selectedCity, setSelectedCity] = useState(0);
   const [selectedDay, setSelectedDay] = useState(0);
@@ -179,6 +179,12 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
   const key = `${selectedCity}-${selectedDay}`;
   const extraActivities = addedActivities[key] || [];
   const currentActivities = [...(currentCity.activities[selectedDay] || []), ...extraActivities];
+  const cityFilter = currentCity.name;
+  const filteredApproved = approvedActivities.filter(
+    (a) =>
+      a.city?.toLowerCase().includes(cityFilter.toLowerCase()) ||
+      a.location?.toLowerCase().includes(cityFilter.toLowerCase())
+  );
 
   return (
     <div className="px-5 py-4 max-w-md mx-auto pb-24">
@@ -284,7 +290,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
       </div>
 
       {/* Activities */}
-      {currentActivities.length === 0 ? (
+      {currentActivities.length === 0 && filteredApproved.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-5xl mb-4">🗺️</div>
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No activities planned for this day</h3>
@@ -297,6 +303,19 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
       <div className="space-y-4 relative">
         {/* Timeline line */}
         <div className="absolute left-[26px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-zinc-200 dark:from-zinc-800 via-zinc-200 dark:via-zinc-800 to-transparent" />
+
+        {filteredApproved.map((activity) => (
+          <div key={`approved-${activity.id}`} className="flex items-start gap-3 mb-4">
+            <div className="w-2.5 h-2.5 rounded-full bg-teal-500 mt-2 shrink-0 ring-4 ring-teal-500/20" />
+            <div className="flex-1 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/50 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/40 px-2 py-0.5 rounded-full">GROUP PICK</span>
+              </div>
+              <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100">{activity.name}</div>
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">{activity.location}</div>
+            </div>
+          </div>
+        ))}
 
         {currentActivities.map((activity, index) => {
           const Icon = activity.icon;

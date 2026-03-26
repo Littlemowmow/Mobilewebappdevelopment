@@ -110,7 +110,7 @@ function generateInviteCode(): string {
   return code;
 }
 
-function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number, memberCount?: number, savedCount?: number): Trip {
+function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number, memberCount?: number, savedCount?: number, extraMembers?: Array<{ name: string; color: string; emoji: string }>): Trip {
   const rawDestinations = (dbTrip.destinations as string[]) || [];
   const startDate = dbTrip.start_date ? new Date(dbTrip.start_date as string) : new Date();
   const endDate = dbTrip.end_date ? new Date(dbTrip.end_date as string) : new Date();
@@ -170,8 +170,9 @@ function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number, m
     saved: savedCount ?? 0,
     cityCount: cities.length,
     code: (dbTrip.invite_code as string) || "------",
-    memberColors: ["bg-orange-500"],
-    memberInitials: ["Y"],
+    memberColors: ["bg-orange-500", ...(extraMembers || []).map(m => m.color)],
+    memberInitials: ["Y", ...(extraMembers || []).map(m => m.name.charAt(0).toUpperCase())],
+    memberEmojis: ["", ...(extraMembers || []).map(m => m.emoji)],
     budget: (dbTrip.budget as number) || 0,
     metadata: (dbTrip.metadata as Trip["metadata"]) || undefined,
   };
@@ -371,10 +372,10 @@ export function TripProvider({ children }: { children: ReactNode }) {
     if (!ownedError && allTrips.length > 0) {
       const tripIds = allTrips.map(t => t.id);
 
-      // Fetch actual member counts from trip_members
+      // Fetch actual member data from trip_members
       const { data: memberCountRows } = await supabase
         .from("trip_members")
-        .select("trip_id")
+        .select("trip_id, user_id, metadata")
         .in("trip_id", tripIds);
 
       const memberCountMap: Record<string, number> = {};
@@ -383,6 +384,29 @@ export function TripProvider({ children }: { children: ReactNode }) {
           memberCountMap[row.trip_id] = (memberCountMap[row.trip_id] || 0) + 1;
         }
       }
+
+      // Fetch profiles for member names
+      const memberUserIds = (memberCountRows || []).filter(m => m.user_id).map(m => m.user_id);
+      const { data: memberProfiles } = memberUserIds.length > 0
+        ? await supabase.from("profiles").select("id, name, display_name").in("id", memberUserIds)
+        : { data: [] as Array<{ id: string; name: string; display_name: string }> };
+
+      const profileMap = new Map((memberProfiles || []).map(p => [p.id, p]));
+      const membersByTrip = new Map<string, Array<{ name: string; color: string; emoji: string }>>();
+      const memberColors = ["bg-teal-500", "bg-purple-500", "bg-blue-500", "bg-pink-500", "bg-amber-500"];
+
+      (memberCountRows || []).forEach(m => {
+        const tripId = String(m.trip_id);
+        if (!membersByTrip.has(tripId)) membersByTrip.set(tripId, []);
+        const profile = m.user_id ? profileMap.get(m.user_id) : null;
+        const meta = (m.metadata as Record<string, unknown>) || {};
+        const name = (meta.name as string) || profile?.display_name || profile?.name || "Member";
+        membersByTrip.get(tripId)!.push({
+          name,
+          color: memberColors[membersByTrip.get(tripId)!.length % memberColors.length],
+          emoji: (meta.emoji as string) || "",
+        });
+      });
 
       // Fetch saved activity counts per trip's cities
       const allCities: string[] = [];
@@ -423,6 +447,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         i,
         (memberCountMap[t.id] || 0) + 1, // +1 for owner
         savedCountMap[t.id] || 0,
+        membersByTrip.get(String(t.id)),
       )));
     } else if (ownedError) {
       console.error("Failed to load trips:", ownedError);

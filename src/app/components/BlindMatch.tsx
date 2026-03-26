@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { useState, useMemo, useCallback } from "react";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../../lib/supabase";
 
 const MEMBER_COLORS = [
   "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -52,10 +53,9 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
   const yourVoteCount = Object.values(itemVotes).filter(v => v !== null && v !== undefined).length;
   const youVoted = pendingItems.length > 0 && yourVoteCount >= pendingItems.length;
 
-  // Simulate other members as having voted (in real app this comes from DB)
-  const votedCount = youVoted ? members.length : (yourVoteCount > 0 ? 1 : 0);
+  const votedCount = youVoted ? 1 : 0;
   const waitingCount = members.length - votedCount;
-  const allVoted = votedCount === members.length && members.length > 0 && pendingItems.length > 0;
+  const allVoted = youVoted; // For solo/demo, just show results when you vote
 
   const toggleItemVote = useCallback((itemId: number, direction: 'up' | 'down') => {
     setItemVotes(prev => ({
