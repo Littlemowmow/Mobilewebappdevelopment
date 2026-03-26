@@ -757,10 +757,10 @@ export function Discover() {
 
       {/* Activity Detail Modal */}
       {showDetail && currentPlace && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[env(safe-area-inset-top,0px)]" onClick={() => setShowDetail(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowDetail(false)}>
           <div className="absolute inset-0 bg-black/60" />
           <div
-            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-b-[28px] rounded-t-none max-h-[92dvh] overflow-y-auto shadow-2xl"
+            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-[28px] max-h-[85dvh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
@@ -773,7 +773,7 @@ export function Discover() {
 
             {/* Image */}
             {currentPlace.image && (currentPlace.image.startsWith("http")) && (
-              <div className="h-56 w-full overflow-hidden">
+              <div className="h-52 w-full overflow-hidden rounded-t-[28px]">
                 <img src={currentPlace.image} alt={currentPlace.name} className="w-full h-full object-cover" />
               </div>
             )}
