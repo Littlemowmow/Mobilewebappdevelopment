@@ -71,6 +71,7 @@ export function TripDetail() {
               setActiveTrip(null);
               navigate("/trips");
             }}
+            aria-label="Back to trips"
             className="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors backdrop-blur-md"
           >
             <ArrowLeft className="w-5 h-5 text-white" />
@@ -166,6 +167,7 @@ export function TripDetail() {
           </div>
           <button
             onClick={() => setShowAddMember(true)}
+            aria-label="Add member"
             className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors backdrop-blur-md border-[3px] border-white/50 shadow-md"
           >
             <Plus className="w-5 h-5 text-white" />
@@ -273,6 +275,7 @@ export function TripDetail() {
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">Add Member</h2>
               <button
                 onClick={() => setShowAddMember(false)}
+                aria-label="Close add member dialog"
                 className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors"
               >
                 <X className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />

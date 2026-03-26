@@ -193,6 +193,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
       <div className="flex items-center gap-3 mb-5 pt-1">
         <button
           onClick={() => setActiveTrip(null)}
+          aria-label="Back to trips"
           className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent"
         >
           <ArrowLeft className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
@@ -350,6 +351,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
                               e.stopPropagation();
                               handleDeleteActivity(activity.id);
                             }}
+                            aria-label={`Delete ${activity.title}`}
                             className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                           >
                             <X className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
@@ -401,7 +403,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
           <div className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[28px] p-6 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white">Add Activity</h2>
-              <button onClick={resetForm} className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+              <button onClick={resetForm} aria-label="Close add activity dialog" className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
                 <X className="w-4 h-4 text-zinc-500" />
               </button>
             </div>

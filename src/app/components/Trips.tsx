@@ -91,8 +91,9 @@ export function Trips() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6 pt-1">
         <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">My Trips</h1>
-        <Link 
+        <Link
           to="/trips/new"
+          aria-label="Create new trip"
           className="bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 p-3 rounded-2xl transition-all shadow-lg shadow-orange-600/30"
         >
           <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
@@ -104,6 +105,7 @@ export function Trips() {
         <input
           type="text"
           placeholder="Enter trip code"
+          aria-label="Trip invite code"
           value={joinCode}
           onChange={(e) => { setJoinCode(e.target.value); setJoinError(""); }}
           onKeyDown={(e) => { if (e.key === "Enter") handleJoinTrip(); }}
@@ -150,11 +152,6 @@ export function Trips() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {typeof trip.id === "number" && (
-                      <span className="bg-gradient-to-r from-purple-500 to-violet-500 text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-lg border border-purple-400/30">
-                        DEMO
-                      </span>
-                    )}
                     <span className="bg-white text-orange-600 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-lg">
                       {trip.status.toUpperCase()}
                     </span>

@@ -137,6 +137,7 @@ export function Profile() {
           type="button"
           onClick={handleAvatarClick}
           disabled={avatarUploading}
+          aria-label="Upload profile photo"
           className="w-20 h-20 bg-gradient-to-br from-orange-500 to-pink-500 rounded-[20px] flex items-center justify-center text-white shadow-lg shadow-orange-500/25 border-2 border-white/10 relative overflow-hidden cursor-pointer group"
         >
           <div className="absolute inset-0 rounded-[20px] shadow-[0_0_20px_rgba(249,115,22,0.2)]" />

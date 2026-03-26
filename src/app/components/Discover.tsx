@@ -58,7 +58,7 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
     if (geoData.length === 0) return [];
     lat = parseFloat(geoData[0].lat);
     lon = parseFloat(geoData[0].lon);
-  } catch { return []; }
+  } catch (err) { console.warn("Geocode failed:", err); return []; }
 
   // Fetch Overpass + Wikipedia in PARALLEL for speed
   const [osmResults, wikiResults] = await Promise.all([
@@ -84,7 +84,7 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
             if (url && !url.includes(".svg")) place.image = url;
           }
         }
-      } catch { /* silent */ }
+      } catch (err) { console.warn("API fetch failed:", err); }
     }));
   }
 
@@ -201,7 +201,7 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
         });
       }
     }
-  } catch { /* silent */ }
+  } catch (err) { console.warn("Place fetch failed:", err); }
   return results;
 }
 
@@ -253,7 +253,7 @@ async function fetchWikipediaPlaces(lat: number, lon: number, cityName: string):
         }
       }
     }
-  } catch { /* silent */ }
+  } catch (err) { console.warn("Place fetch failed:", err); }
 
   return results;
 }

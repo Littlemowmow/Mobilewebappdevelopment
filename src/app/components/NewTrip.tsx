@@ -59,7 +59,8 @@ function useCitySearch() {
           // Deduplicate by display name
           .filter((c: CityResult, i: number, arr: CityResult[]) => arr.findIndex(a => a.display === c.display) === i);
         setResults(cities);
-      } catch {
+      } catch (err) {
+        console.warn("City search failed:", err);
         setResults([]);
       }
       setSearching(false);
@@ -189,7 +190,7 @@ export function NewTrip() {
     <div className="px-5 py-4 max-w-md mx-auto pb-24">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8 pt-1">
-        <Link to="/trips" className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent">
+        <Link to="/trips" aria-label="Back to trips" className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent">
           <ArrowLeft className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
         </Link>
         <h1 className="text-[24px] tracking-tight font-semibold text-zinc-900 dark:text-white">Plan New Trip</h1>
@@ -214,7 +215,9 @@ export function NewTrip() {
           <input
             type="date"
             value={startDate}
+            min={new Date().toISOString().split("T")[0]}
             onChange={(e) => setStartDate(e.target.value)}
+            aria-label="Trip start date"
             className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-4 text-[15px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none"
           />
         </div>
@@ -223,7 +226,9 @@ export function NewTrip() {
           <input
             type="date"
             value={endDate}
+            min={startDate || new Date().toISOString().split("T")[0]}
             onChange={(e) => setEndDate(e.target.value)}
+            aria-label="Trip end date"
             className={`w-full bg-white dark:bg-zinc-950 border rounded-2xl px-4 py-4 text-[15px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none ${
               startDate && endDate && endDate <= startDate
                 ? "border-red-400 dark:border-red-600"
@@ -233,7 +238,10 @@ export function NewTrip() {
         </div>
       </div>
       {startDate && endDate && endDate <= startDate && (
-        <p className="text-red-500 text-sm font-medium mb-4 px-1">End date must be after start date</p>
+        <p className="text-red-500 text-sm font-medium mb-4 px-1" role="alert">End date must be after start date</p>
+      )}
+      {startDate && startDate < new Date().toISOString().split("T")[0] && (
+        <p className="text-red-500 text-sm font-medium mb-4 px-1" role="alert">Start date cannot be in the past</p>
       )}
       {!(startDate && endDate && endDate <= startDate) && <div className="mb-5" />}
 
@@ -468,7 +476,7 @@ export function NewTrip() {
       {/* Create Button */}
       <button
         onClick={() => { setCreateError(""); handleCreateTrip(); }}
-        disabled={submitting || !tripName.trim() || !destinations.some(d => d.trim() !== "") || (!!startDate && !!endDate && endDate <= startDate)}
+        disabled={submitting || !tripName.trim() || !destinations.some(d => d.trim() !== "") || (!!startDate && !!endDate && endDate <= startDate) || (!!startDate && startDate < new Date().toISOString().split("T")[0])}
         className="w-full bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-4 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Creating..." : "Create Trip"}
