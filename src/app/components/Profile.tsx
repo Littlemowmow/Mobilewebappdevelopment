@@ -21,6 +21,8 @@ export function Profile() {
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
+
   const emailPrefix = user?.email ? user.email.split("@")[0] : "";
   const displayName = localDisplayName || profile?.display_name || profile?.name || emailPrefix || "User";
   const displayEmail = profile?.email || user?.email || "—";
@@ -99,8 +101,6 @@ export function Profile() {
     setEditName(displayName);
     setIsEditing(true);
   };
-
-  const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
 
   const handleEditSave = async () => {
     if (!user?.id || !editName.trim()) return;

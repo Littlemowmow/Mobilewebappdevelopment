@@ -508,12 +508,13 @@ export function Discover() {
   };
 
   const saveActivity = useCallback(
-    async (activityId: string, intensityScore: number) => {
+    async (activityId: string, intensityScore: number, cityName?: string) => {
       if (!user) return;
       const { error } = await supabase.from("saved_activities").upsert({
         user_id: user.id,
         activity_id: activityId,
         is_super_like: intensityScore >= 8,
+        city: cityName?.toLowerCase() || null,
       });
       if (error) {
         console.error("Failed to save activity:", error);
@@ -531,11 +532,11 @@ export function Discover() {
       const score = calcIntensityScore(intensityAtSwipe);
 
       if (direction === "right" && currentPlace) {
-        saveActivity(currentPlace.id, score);
+        const cityParts = currentPlace.location.split(", ");
+        const city = cityParts[cityParts.length - 1] || "";
+        saveActivity(currentPlace.id, score, city);
         // If there's an active trip, propose this activity for group voting
         if (activeTrip) {
-          const cityParts = currentPlace.location.split(", ");
-          const city = cityParts[cityParts.length - 1] || "";
           proposeActivity({
             id: Date.now() + Math.floor(Math.random() * 10000),
             name: currentPlace.name,
