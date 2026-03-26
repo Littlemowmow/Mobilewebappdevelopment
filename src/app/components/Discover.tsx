@@ -367,7 +367,13 @@ export function Discover() {
         return;
       }
 
-      let activities = (data || []).map(mapActivityToPlace);
+      // Filter haram content from Supabase results
+      const BLOCKED = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "lounge", "hookah", "casino", "gambling", "strip", "pork"];
+      const cleanData = (data || []).filter(a => {
+        const text = `${a.name || ""} ${a.description || ""} ${a.experience_tag || ""} ${(a.tags || []).join(" ")}`.toLowerCase();
+        return !BLOCKED.some(kw => text.includes(kw));
+      });
+      let activities = cleanData.map(mapActivityToPlace);
 
       // If Supabase has few results, fetch directly from free APIs (client-side, no serverless)
       const citiesToFetch = tripCities.length > 0
