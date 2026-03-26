@@ -6,6 +6,8 @@ import { Globe, Loader2 } from "lucide-react";
 
 const emojiOptions = ["😎", "🤠", "🥳", "😈", "🦊", "🐸", "🌸", "⚡", "🔥", "💎", "🎯", "🌊", "🍕", "✈️", "🎒", "🗺️", "🌴", "🎭", "🎵", "🏔️"];
 
+const ACCOMMODATION_TYPES = ["Hotel", "Airbnb", "Hostel", "Friend's place", "Other"] as const;
+
 export function JoinTrip() {
   const { code } = useParams();
   const navigate = useNavigate();
@@ -25,6 +27,14 @@ export function JoinTrip() {
   const [flightCost, setFlightCost] = useState("");
   const [arrivalDate, setArrivalDate] = useState("");
   const [departureDate, setDepartureDate] = useState("");
+
+  // Accommodation state
+  const [accomMode, setAccomMode] = useState<"none" | "same" | "own">("none");
+  const [accomType, setAccomType] = useState<typeof ACCOMMODATION_TYPES[number]>("Hotel");
+  const [accomAddress, setAccomAddress] = useState("");
+  const [accomCheckin, setAccomCheckin] = useState("");
+  const [accomCheckout, setAccomCheckout] = useState("");
+  const [accomCostPerNight, setAccomCostPerNight] = useState("");
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,6 +298,130 @@ export function JoinTrip() {
 
             <p className="text-xs text-zinc-500 dark:text-zinc-400 ml-1">We'll track your flight and text you landing updates</p>
           </div>
+        </div>
+
+        {/* Accommodation */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">🏨</span>
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Where are you staying?</label>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 font-normal">(optional)</span>
+          </div>
+
+          {/* Mode selection pills */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setAccomMode(accomMode === "same" ? "none" : "same")}
+              className={`flex-1 py-3 px-3 rounded-2xl text-[13px] font-semibold border transition-all text-center ${
+                accomMode === "same"
+                  ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
+                  : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+              }`}
+            >
+              Same as someone else
+            </button>
+            <button
+              onClick={() => setAccomMode(accomMode === "own" ? "none" : "own")}
+              className={`flex-1 py-3 px-3 rounded-2xl text-[13px] font-semibold border transition-all text-center ${
+                accomMode === "own"
+                  ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
+                  : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+              }`}
+            >
+              Entering my own
+            </button>
+          </div>
+
+          {/* "Same as someone else" — MVP: show first member */}
+          {accomMode === "same" && (
+            <div className="space-y-2">
+              <button
+                className="w-full flex items-center gap-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/50 rounded-2xl px-5 py-4 text-left transition-all"
+              >
+                <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                  T
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[15px] font-semibold text-teal-700 dark:text-teal-300">Same as Trip Creator</div>
+                  <div className="text-xs text-teal-600/70 dark:text-teal-400/70">You'll share their accommodation details</div>
+                </div>
+                <div className="w-6 h-6 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </button>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 ml-1">More members will appear here as they join</p>
+            </div>
+          )}
+
+          {/* "Entering my own" — full form */}
+          {accomMode === "own" && (
+            <div className="space-y-3">
+              {/* Accommodation type pills */}
+              <div>
+                <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-2 ml-1">Type</label>
+                <div className="flex flex-wrap gap-2">
+                  {ACCOMMODATION_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setAccomType(type)}
+                      className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${
+                        accomType === type
+                          ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
+                          : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Name / Address */}
+              <input
+                type="text"
+                value={accomAddress}
+                onChange={(e) => setAccomAddress(e.target.value)}
+                placeholder="Hotel name or address"
+                className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+
+              {/* Check-in / Check-out dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1 ml-1">Check-in</label>
+                  <input
+                    type="date"
+                    value={accomCheckin}
+                    onChange={(e) => setAccomCheckin(e.target.value)}
+                    className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-3 text-[14px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1 ml-1">Check-out</label>
+                  <input
+                    type="date"
+                    value={accomCheckout}
+                    onChange={(e) => setAccomCheckout(e.target.value)}
+                    className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-3 text-[14px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* Cost per night */}
+              <div className="relative">
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-[15px]">$</span>
+                <input
+                  type="number"
+                  value={accomCostPerNight}
+                  onChange={(e) => setAccomCostPerNight(e.target.value)}
+                  placeholder="Cost per night (optional)"
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-10 pr-5 py-4 text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {error && <p className="text-red-500 text-sm bg-red-500/10 rounded-xl px-4 py-3 mb-4">{error}</p>}

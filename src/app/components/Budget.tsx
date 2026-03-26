@@ -32,6 +32,8 @@ interface LocalExpense {
   iconBg: string;
   emoji: string;
   splitWith?: string[];
+  oweDirection?: "owed" | "you_owe" | null;
+  oweMembers?: string[];
 }
 
 // Fallback members used only when no active trip is available
@@ -126,6 +128,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [formCity, setFormCity] = useState(activeTrip?.cities[0]?.name || "");
   const [formPaidBy, setFormPaidBy] = useState(MEMBERS[0]);
   const [formSplitWith, setFormSplitWith] = useState<string[]>([...MEMBERS]);
+  const [formOweDirection, setFormOweDirection] = useState<"owed" | "you_owe" | null>(null);
+  const [formOweMembers, setFormOweMembers] = useState<string[]>([]);
 
   // Combine context transactions with local expenses
   const allTransactions = useMemo(
@@ -247,6 +251,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     setFormCity("Barcelona");
     setFormPaidBy(MEMBERS[0]);
     setFormSplitWith([...MEMBERS]);
+    setFormOweDirection(null);
+    setFormOweMembers([]);
   }
 
   function handleAddExpense() {
@@ -268,6 +274,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
       iconBg: meta.iconBg,
       emoji: meta.emoji,
       splitWith: formSplitWith.length > 0 ? [...formSplitWith] : undefined,
+      oweDirection: formOweDirection,
+      oweMembers: formOweMembers.length > 0 ? [...formOweMembers] : undefined,
     };
 
     setLocalExpenses((prev) => [newExpense, ...prev]);
@@ -277,6 +285,12 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
 
   function toggleSplitMember(name: string) {
     setFormSplitWith((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+    );
+  }
+
+  function toggleOweMember(name: string) {
+    setFormOweMembers((prev) =>
       prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
     );
   }
@@ -822,6 +836,27 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                         <span>•</span>
                         <span>{transaction.city}</span>
                       </div>
+                      {/* Owe / Owed indicator */}
+                      {(transaction as LocalExpense).oweDirection && (transaction as LocalExpense).oweMembers && (transaction as LocalExpense).oweMembers!.length > 0 && (
+                        <div className="flex items-center gap-2 mt-2">
+                          {(transaction as LocalExpense).oweDirection === "owed" ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-800/50">
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7-7-7 7" /></svg>
+                              OWED
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2.5 py-1 rounded-full border border-orange-200 dark:border-orange-800/50">
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7 7 7-7" /></svg>
+                              YOU OWE
+                            </span>
+                          )}
+                          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {(transaction as LocalExpense).oweDirection === "owed"
+                              ? (transaction as LocalExpense).oweMembers!.map(m => `${m} owes you`).join(", ")
+                              : (transaction as LocalExpense).oweMembers!.map(m => `You owe ${m}`).join(", ")}
+                          </span>
+                        </div>
+                      )}
                       {transaction.splitWith && transaction.splitWith.length > 0 && (
                         <div className="flex items-center gap-1.5 mt-2">
                           <span className="text-xs text-zinc-500 dark:text-zinc-400">Split:</span>
@@ -1096,6 +1131,148 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                 {formSplitWith.length > 0 && formAmount && (
                   <div className="mt-2 text-center text-[13px] text-zinc-500 dark:text-zinc-400">
                     {"\u20AC"}{(parseFloat(formAmount) / formSplitWith.length).toFixed(2)} per person
+                  </div>
+                )}
+              </div>
+              )}
+
+              {/* Owe / Owed Section */}
+              {!isSolo && (
+              <div className="mb-6">
+                {/* "Someone owes you?" toggle */}
+                <div className="mb-3">
+                  <button
+                    onClick={() => {
+                      if (formOweDirection === "owed") {
+                        setFormOweDirection(null);
+                        setFormOweMembers([]);
+                      } else {
+                        setFormOweDirection("owed");
+                        setFormOweMembers([]);
+                      }
+                    }}
+                    className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all ${
+                      formOweDirection === "owed"
+                        ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20"
+                        : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+                    }`}
+                  >
+                    <span className={`text-[15px] font-medium ${formOweDirection === "owed" ? "text-teal-700 dark:text-teal-300" : "text-zinc-600 dark:text-zinc-400"}`}>
+                      Does someone owe you for this?
+                    </span>
+                    <div className={`w-11 h-6 rounded-full transition-all relative ${formOweDirection === "owed" ? "bg-teal-500" : "bg-zinc-300 dark:bg-zinc-700"}`}>
+                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${formOweDirection === "owed" ? "left-[22px]" : "left-0.5"}`} />
+                    </div>
+                  </button>
+                </div>
+
+                {/* Show member checkboxes when "owed" is active */}
+                {formOweDirection === "owed" && (
+                  <div className="mb-3">
+                    <label className="block text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">Who owes you?</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {MEMBERS.filter(m => m !== formPaidBy).map((member) => {
+                        const isSelected = formOweMembers.includes(member);
+                        return (
+                          <button
+                            key={member}
+                            onClick={() => toggleOweMember(member)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all ${
+                              isSelected
+                                ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20"
+                                : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 opacity-60"
+                            }`}
+                          >
+                            <div className={`w-7 h-7 rounded-full ${MEMBER_COLORS[member] || "bg-zinc-400"} flex items-center justify-center text-white text-[11px] font-bold relative`}>
+                              {member.charAt(0)}
+                              {isSelected && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-teal-500 rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            <span className={`text-[13px] font-medium ${isSelected ? "text-teal-700 dark:text-teal-300" : "text-zinc-500 dark:text-zinc-400"}`}>
+                              {member}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {formOweMembers.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {formOweMembers.map((m) => (
+                          <span key={m} className="inline-flex items-center gap-1 text-xs font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-800/50">
+                            Will notify {m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* "You owe someone?" link — switches perspective */}
+                {formOweDirection !== "you_owe" && formOweDirection !== "owed" && (
+                  <button
+                    onClick={() => { setFormOweDirection("you_owe"); setFormOweMembers([]); }}
+                    className="text-[13px] font-medium text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                  >
+                    Or do you owe someone?
+                  </button>
+                )}
+
+                {formOweDirection === "you_owe" && (
+                  <div>
+                    <div className="mb-3">
+                      <button
+                        onClick={() => { setFormOweDirection(null); setFormOweMembers([]); }}
+                        className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-orange-500 bg-orange-50 dark:bg-orange-900/20 transition-all"
+                      >
+                        <span className="text-[15px] font-medium text-orange-700 dark:text-orange-300">
+                          You owe someone for this
+                        </span>
+                        <div className="w-11 h-6 rounded-full bg-orange-500 relative">
+                          <div className="absolute top-0.5 left-[22px] w-5 h-5 rounded-full bg-white shadow" />
+                        </div>
+                      </button>
+                    </div>
+                    <label className="block text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">Who do you owe?</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {MEMBERS.filter(m => m !== MEMBERS[0]).map((member) => {
+                        const isSelected = formOweMembers.includes(member);
+                        return (
+                          <button
+                            key={member}
+                            onClick={() => toggleOweMember(member)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all ${
+                              isSelected
+                                ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                                : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 opacity-60"
+                            }`}
+                          >
+                            <div className={`w-7 h-7 rounded-full ${MEMBER_COLORS[member] || "bg-zinc-400"} flex items-center justify-center text-white text-[11px] font-bold relative`}>
+                              {member.charAt(0)}
+                              {isSelected && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+                                  <Check className="w-2.5 h-2.5 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            <span className={`text-[13px] font-medium ${isSelected ? "text-orange-700 dark:text-orange-300" : "text-zinc-500 dark:text-zinc-400"}`}>
+                              {member}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {formOweMembers.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {formOweMembers.map((m) => (
+                          <span key={m} className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2.5 py-1 rounded-full border border-orange-200 dark:border-orange-800/50">
+                            Will notify {m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
