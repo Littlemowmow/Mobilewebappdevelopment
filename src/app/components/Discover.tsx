@@ -348,7 +348,8 @@ export function Discover() {
       setFetchError(false);
 
       // Get cities to fetch for (from active trip or all)
-      const tripCities = activeTrip?.cities.map(c => c.name) || [];
+      // Extract just city name (before comma) for DB matching — "Tokyo, Japan" → "Tokyo"
+      const tripCities = activeTrip?.cities.map(c => c.name.split(",")[0].trim()) || [];
 
       // Fetch from Supabase
       let query = supabase.from("activities").select("*").order("created_at", { ascending: false }).limit(50);
@@ -443,8 +444,10 @@ export function Discover() {
 
   // Filter places by active city
   const activeCityName = cities.find((c) => c.active)?.name;
-  const filteredPlaces = activeCityName
-    ? places.filter((p) => p.location.includes(activeCityName))
+  // Extract just the city name (before comma) for matching — "Tokyo, Japan" → "Tokyo"
+  const cityMatchName = activeCityName?.split(",")[0]?.trim();
+  const filteredPlaces = cityMatchName
+    ? places.filter((p) => p.location.toLowerCase().includes(cityMatchName.toLowerCase()) || p.city?.toLowerCase().includes(cityMatchName.toLowerCase()))
     : places;
 
   const resetSlider = useCallback(() => {
@@ -490,7 +493,7 @@ export function Discover() {
           const cityParts = currentPlace.location.split(", ");
           const city = cityParts[cityParts.length - 1] || "";
           proposeActivity({
-            id: typeof currentPlace.id === "string" ? parseInt(currentPlace.id, 10) || Date.now() : Number(currentPlace.id),
+            id: Date.now() + Math.floor(Math.random() * 10000),
             name: currentPlace.name,
             location: currentPlace.location,
             city,

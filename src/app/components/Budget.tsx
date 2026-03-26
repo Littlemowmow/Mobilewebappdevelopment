@@ -123,7 +123,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [formTitle, setFormTitle] = useState("");
   const [formAmount, setFormAmount] = useState("");
   const [formCategory, setFormCategory] = useState("Food & Drinks");
-  const [formCity, setFormCity] = useState("Barcelona");
+  const [formCity, setFormCity] = useState(activeTrip?.cities[0]?.name || "");
   const [formPaidBy, setFormPaidBy] = useState(MEMBERS[0]);
   const [formSplitWith, setFormSplitWith] = useState<string[]>([...MEMBERS]);
 

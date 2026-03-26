@@ -129,7 +129,7 @@ export function TripDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="sticky top-0 z-10 bg-zinc-50 dark:bg-black px-5 pt-4 pb-3 border-b border-zinc-200/60 dark:border-zinc-700/50/50">
+      <div className="sticky top-0 z-10 bg-zinc-50 dark:bg-black px-5 pt-4 pb-3 border-b border-zinc-200/60 dark:border-zinc-700/50">
         <div className="flex gap-2 bg-white dark:bg-zinc-900 rounded-2xl p-1 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] border border-zinc-200 dark:border-zinc-700/50">
           <button
             onClick={() => setActiveTab("schedule")}
