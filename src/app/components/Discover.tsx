@@ -347,10 +347,18 @@ export function Discover() {
       let activities = cleanData.map(mapActivityToPlace);
 
       // If Supabase has few results, fetch directly from free APIs (client-side, no serverless)
+      // Free swiping = bucket-list destinations, epic adventures, world wonders
+      const BUCKET_LIST_CITIES = [
+        "Interlaken", "Zermatt", "Queenstown", "Reykjavik", "Cusco",
+        "Marrakech", "Cappadocia", "Santorini", "Dubrovnik", "Kyoto",
+        "Banff", "Patagonia", "Zanzibar", "Kathmandu", "Siem Reap",
+        "Petra", "Luang Prabang", "Amalfi", "Tromsø", "Hallstatt",
+        "Machu Picchu", "Lauterbrunnen", "Bagan", "Chefchaouen", "Kotor",
+      ];
       const citiesToFetch = tripCities.length > 0
         ? tripCities
         : activities.length < 10
-          ? ["Barcelona", "Paris", "Rome", "Istanbul", "Seoul", "Bali"].sort(() => Math.random() - 0.5).slice(0, 3)
+          ? BUCKET_LIST_CITIES.sort(() => Math.random() - 0.5).slice(0, 4)
           : [];
 
       if (activities.length < 10 && citiesToFetch.length > 0) {
