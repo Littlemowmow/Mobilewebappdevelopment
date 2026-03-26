@@ -55,6 +55,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const { user, profile } = useAuth();
   const isSolo = activeTrip ? activeTrip.members <= 1 : false;
   const [selectedCity, setSelectedCity] = useState("All");
+  const [dismissedSettlements, setDismissedSettlements] = useState<number[]>([]);
   const isSoloInit = activeTrip ? activeTrip.members <= 1 : false;
   const [activeSubTab, setActiveSubTab] = useState<"fund" | "budget" | "settle">(isSoloInit ? "budget" : "fund");
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -1023,7 +1024,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h4 className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100 truncate">{transaction.title}</h4>
-                        <span className="text-[15px] font-bold text-zinc-900 dark:text-zinc-100 flex-shrink-0">{"\u20AC"}{transaction.amount}</span>
+                        <span className="text-[15px] font-bold text-zinc-900 dark:text-zinc-100 flex-shrink-0">${transaction.amount}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 flex-wrap">
                         <span className="font-medium">{transaction.paidBy}</span>
@@ -1095,7 +1096,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             </div>
           ) : (
             <div className="space-y-3">
-              {settleBalances.map((s, idx) => (
+              {settleBalances.filter((_, idx) => !dismissedSettlements.includes(idx)).map((s, idx) => (
                 <div
                   key={idx}
                   className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[20px] p-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800"
@@ -1119,13 +1120,15 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                     {/* Amount */}
                     <div className="text-right flex items-center gap-3 flex-shrink-0">
                       <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                        {"\u20AC"}{s.amount.toFixed(2)}
+                        ${s.amount.toFixed(2)}
                       </div>
                       <button
-                        onClick={() => alert("Coming soon!")}
+                        onClick={() => {
+                          setDismissedSettlements(prev => [...prev, idx]);
+                        }}
                         className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-xl text-[13px] font-semibold hover:opacity-90 transition-opacity"
                       >
-                        Settle
+                        Mark Paid
                       </button>
                     </div>
                   </div>
@@ -1220,7 +1223,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
               <div className="mb-4">
                 <label className="block text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[15px] text-zinc-500 dark:text-zinc-400 font-semibold">{"\u20AC"}</span>
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[15px] text-zinc-500 dark:text-zinc-400 font-semibold">$</span>
                   <input
                     type="number"
                     step="0.01"
@@ -1326,7 +1329,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                 </div>
                 {formSplitWith.length > 0 && formAmount && (
                   <div className="mt-2 text-center text-[13px] text-zinc-500 dark:text-zinc-400">
-                    {"\u20AC"}{(parseFloat(formAmount) / formSplitWith.length).toFixed(2)} per person
+                    ${(parseFloat(formAmount) / formSplitWith.length).toFixed(2)} per person
                   </div>
                 )}
               </div>
