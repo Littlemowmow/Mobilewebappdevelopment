@@ -327,6 +327,11 @@ export function Discover() {
   const [sliderKey, setSliderKey] = useState(0);
   const [showDetail, setShowDetail] = useState(false);
   const [showTripPicker, setShowTripPicker] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [fetchedCities, setFetchedCities] = useState<string[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Fetch activities — from Supabase first, fall back to live API for trip cities
   useEffect(() => {
@@ -396,6 +401,7 @@ export function Discover() {
       if (!cancelled) {
         // Shuffle for variety
         setPlaces(activities.sort(() => Math.random() - 0.5));
+        setFetchedCities(citiesToFetch);
         setLoading(false);
       }
     }
@@ -403,6 +409,35 @@ export function Discover() {
     fetchActivities();
     return () => { cancelled = true; };
   }, [activeTrip?.id]);
+
+  const fetchMore = useCallback(async () => {
+    const BUCKET_LIST_CITIES = [
+      "Interlaken", "Zermatt", "Queenstown", "Reykjavik", "Cusco",
+      "Marrakech", "Cappadocia", "Santorini", "Dubrovnik", "Kyoto",
+      "Banff", "Patagonia", "Zanzibar", "Kathmandu", "Siem Reap",
+      "Petra", "Luang Prabang", "Amalfi", "Tromsø", "Hallstatt",
+      "Machu Picchu", "Lauterbrunnen", "Bagan", "Chefchaouen", "Kotor",
+    ];
+    const remaining = BUCKET_LIST_CITIES.filter(c => !fetchedCities.includes(c));
+    if (remaining.length === 0) return;
+
+    setLoadingMore(true);
+    const newCities = remaining.sort(() => Math.random() - 0.5).slice(0, 3);
+    const existingNames = new Set(places.map(a => a.name.toLowerCase()));
+    let newPlaces: Place[] = [];
+
+    for (const city of newCities) {
+      const liveResults = await fetchLiveActivities(city);
+      const fresh = liveResults.filter(r => !existingNames.has(r.name.toLowerCase()));
+      fresh.forEach(r => existingNames.add(r.name.toLowerCase()));
+      newPlaces = [...newPlaces, ...fresh];
+    }
+
+    setPlaces(prev => [...prev, ...newPlaces.sort(() => Math.random() - 0.5)]);
+    setFetchedCities(prev => [...prev, ...newCities]);
+    setCurrentIndex(0);
+    setLoadingMore(false);
+  }, [fetchedCities, places]);
 
   const refetchActivities = useCallback(async () => {
     setLoading(true);
@@ -446,9 +481,10 @@ export function Discover() {
   const activeCityName = cities.find((c) => c.active)?.name;
   // Extract just the city name (before comma) for matching — "Tokyo, Japan" → "Tokyo"
   const cityMatchName = activeCityName?.split(",")[0]?.trim();
-  const filteredPlaces = cityMatchName
+  const filteredPlaces = (cityMatchName
     ? places.filter((p) => p.location.toLowerCase().includes(cityMatchName.toLowerCase()) || p.city?.toLowerCase().includes(cityMatchName.toLowerCase()))
-    : places;
+    : places
+  ).filter((p) => !activeFilter || p.tags.includes(activeFilter));
 
   const resetSlider = useCallback(() => {
     setIntensity(0);
@@ -518,8 +554,8 @@ export function Discover() {
   );
 
   const handleSliderDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const sliderWidth = 280;
-    const maxOffset = sliderWidth / 2 - 24;
+    const sliderWidth = sliderRef.current?.offsetWidth || 280;
+    const maxOffset = sliderWidth / 2 - 26;
     const normalizedValue = Math.max(-1, Math.min(1, info.offset.x / maxOffset));
     setIntensity(normalizedValue);
   };
@@ -543,10 +579,41 @@ export function Discover() {
       {/* Header */}
       <div className="flex justify-between items-center mb-5 pt-1">
         <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">Discover</h1>
-        <button className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-zinc-200/50 dark:border-zinc-700/50 hover:scale-105">
+        <button
+          onClick={() => setShowFilter(!showFilter)}
+          className="relative w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-zinc-200/50 dark:border-zinc-700/50 hover:scale-105"
+        >
           <Filter className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+          {activeFilter && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-orange-500 border-2 border-white dark:border-zinc-900" />
+          )}
         </button>
       </div>
+
+      {/* Filter Dropdown */}
+      {showFilter && (
+        <div className="relative z-30 mb-3">
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-3 flex flex-wrap gap-2">
+            {["All", "Culture", "Food", "Nature", "Views", "Entertainment", "Shopping", "Must See"].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => {
+                  setActiveFilter(cat === "All" ? null : cat);
+                  setCurrentIndex(0);
+                  setShowFilter(false);
+                }}
+                className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
+                  (cat === "All" && !activeFilter) || activeFilter === cat
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md"
+                    : "bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Trip Mode Banner / Trip Picker */}
       {trips.length > 0 && (
@@ -685,11 +752,18 @@ export function Discover() {
                   ? `You've seen everything in ${activeCityName}`
                   : "All Caught Up!"}
               </h3>
-              <p className="text-zinc-500 dark:text-zinc-300 text-[15px]">
+              <p className="text-zinc-500 dark:text-zinc-300 text-[15px] mb-5">
                 {activeTrip && activeCityName
                   ? "Try another city or check back later"
                   : "Check back later for more recommendations"}
               </p>
+              <button
+                onClick={fetchMore}
+                disabled={loadingMore}
+                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white rounded-xl text-[15px] font-semibold transition-colors shadow-md"
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
             </div>
           </div>
         )}
@@ -710,7 +784,7 @@ export function Discover() {
         </div>
 
         {/* Gradient Slider */}
-        <div className="relative h-[60px] rounded-full bg-gradient-to-r from-red-100/80 dark:from-red-950/50 via-zinc-100 dark:via-zinc-800/60 to-teal-100/80 dark:to-teal-950/50 border-2 border-zinc-200/80 dark:border-zinc-700/60 overflow-hidden shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+        <div ref={sliderRef} className="relative h-[60px] rounded-full bg-gradient-to-r from-red-100/80 dark:from-red-950/50 via-zinc-100 dark:via-zinc-800/60 to-teal-100/80 dark:to-teal-950/50 border-2 border-zinc-200/80 dark:border-zinc-700/60 overflow-hidden shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
           {/* Active gradient overlay */}
           <div
             className="absolute inset-0 transition-all duration-150"
@@ -730,7 +804,7 @@ export function Discover() {
           <motion.div
             key={sliderKey}
             drag="x"
-            dragConstraints={{ left: -130, right: 130 }}
+            dragConstraints={{ left: -((sliderRef.current?.offsetWidth || 280) / 2 - 26), right: (sliderRef.current?.offsetWidth || 280) / 2 - 26 }}
             dragElastic={0.05}
             dragMomentum={false}
             dragSnapToOrigin
@@ -874,8 +948,6 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
   // Determine image src
   const imageSrc = place.image && (place.image.startsWith("http://") || place.image.startsWith("https://"))
     ? place.image
-    : place.image
-    ? `https://source.unsplash.com/featured/?${place.image}`
     : "";
 
   const noImageStyle = getNoImageStyle(place.tags);

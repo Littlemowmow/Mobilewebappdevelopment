@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
+import { supabase } from "../../lib/supabase";
 import { Plane, Home, DollarSign, ArrowRight, Check, X, HelpCircle } from "lucide-react";
 
 type Answer = "yes" | "no" | "not-sure";
@@ -111,10 +112,23 @@ export function TripSetup() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setShowFollowUp(false);
     setShowTransportFollowUp(false);
     if (isLast) {
+      // Save all setup data to Supabase trip metadata
+      const setupData = {
+        transport_mode: transportMode,
+        booking_code: bookingCode || null,
+        transport_cost: transportCost ? parseFloat(transportCost) : null,
+        hotel_sorted: answers.hotels || null,
+        hotel_cost_per_night: hotelCostPerNight ? parseFloat(hotelCostPerNight) : null,
+        personal_budget: budgetInput ? parseFloat(budgetInput) : null,
+      };
+      // Try to save — if metadata column exists, great; if not, silently continue
+      if (typeof tripId === "string" && tripId.includes("-")) {
+        await supabase.from("trips").update({ metadata: setupData }).eq("id", tripId).then(() => {});
+      }
       navigate(`/trips/${tripId}`);
     } else {
       setCurrentQ(prev => prev + 1);

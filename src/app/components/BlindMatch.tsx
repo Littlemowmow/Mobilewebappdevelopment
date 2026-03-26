@@ -1,95 +1,111 @@
 "use client";
 
-import { ArrowLeft, Lightbulb, Check, Clock, ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
+import { ArrowLeft, Lightbulb, Check, Clock, ThumbsUp, ThumbsDown, Sparkles, Compass } from "lucide-react";
 import { Link } from "react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useTrip } from "../context/TripContext";
+import { useAuth } from "../context/AuthContext";
 
-// Convert a bg-color class to a gradient version for member avatars
-function toGradient(bgClass: string): string {
-  const base = bgClass.replace("bg-", "");
-  return `bg-gradient-to-br from-${base} to-${base.replace("500", "600")}`;
-}
-
-const FALLBACK_MEMBERS = [
-  { name: "H", initial: "H", status: "Voted", color: "bg-gradient-to-br from-orange-500 to-orange-600", isYou: true },
-  { name: "S", initial: "S", status: "Waiting", color: "bg-gradient-to-br from-teal-500 to-teal-600", isYou: false },
-];
-
-const votingItems = [
-  {
-    id: 1,
-    title: "Bunkers del Carmel Sunset",
-    location: "Barcelona",
-    city: "🇪🇸",
-    description: "360° city views + snacks at golden hour",
-    status: "voting",
-    votedCount: 2,
-    totalCount: 4,
-  },
-  {
-    id: 2,
-    title: "Skip Sagrada Familia?",
-    location: "Barcelona", 
-    city: "🇪🇸",
-    description: "It's crowded and expensive. Maybe just photos outside?",
-    status: "voting",
-    votedCount: 3,
-    totalCount: 4,
-  },
-  {
-    id: 3,
-    title: "Add Toledo Day Trip",
-    location: "Madrid",
-    city: "🇪🇸",
-    description: "Medieval city 30min from Madrid. Game of Thrones vibes.",
-    status: "voting",
-    votedCount: 1,
-    totalCount: 4,
-  },
-  {
-    id: 4,
-    title: "Change Lisbon to 3 Days",
-    location: "Lisbon",
-    city: "🇵🇹",
-    description: "2 days feels rushed. Add Sintra day trip?",
-    status: "voting",
-    votedCount: 2,
-    totalCount: 4,
-  },
+const MEMBER_COLORS = [
+  "bg-gradient-to-br from-orange-500 to-orange-600",
+  "bg-gradient-to-br from-teal-500 to-teal-600",
+  "bg-gradient-to-br from-purple-500 to-purple-600",
+  "bg-gradient-to-br from-blue-500 to-blue-600",
+  "bg-gradient-to-br from-pink-500 to-pink-600",
+  "bg-gradient-to-br from-amber-500 to-amber-600",
 ];
 
 export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
+  const { activeTrip, proposedActivities, approveActivity, rejectActivity } = useTrip();
+  const { profile } = useAuth();
   const [selectedTab, setSelectedTab] = useState<"voting" | "decided">("voting");
-  const [members, setMembers] = useState(FALLBACK_MEMBERS);
   const [itemVotes, setItemVotes] = useState<Record<number, 'up' | 'down' | null>>({});
-  const votedCount = members.filter(m => m.status === "Voted").length;
-  const waitingCount = members.filter(m => m.status === "Waiting").length;
-  const allVoted = votedCount === members.length;
 
-  const toggleVote = (name: string) => {
-    setMembers(prev => prev.map(m =>
-      m.name === name && m.isYou
-        ? { ...m, status: m.status === "Voted" ? "Waiting" : "Voted" }
-        : m
-    ));
-  };
+  // Build members from trip data + current user
+  const members = useMemo(() => {
+    const currentUserName = profile?.name || profile?.email?.split("@")[0] || "You";
+    const currentInitial = currentUserName.charAt(0).toUpperCase();
 
-  const toggleItemVote = (itemId: number, direction: 'up' | 'down') => {
+    const memberList = [
+      { name: currentUserName, initial: currentInitial, color: MEMBER_COLORS[0], isYou: true },
+    ];
+
+    // Add trip members from initials
+    if (activeTrip?.memberInitials) {
+      activeTrip.memberInitials.forEach((initial, i) => {
+        if (initial !== currentInitial) {
+          memberList.push({
+            name: initial,
+            initial,
+            color: MEMBER_COLORS[(i + 1) % MEMBER_COLORS.length],
+            isYou: false,
+          });
+        }
+      });
+    }
+    return memberList;
+  }, [activeTrip, profile]);
+
+  // Your vote status: voted if you've voted on all pending items
+  const pendingItems = proposedActivities.filter(a => a.status === "pending");
+  const decidedItems = proposedActivities.filter(a => a.status !== "pending");
+  const yourVoteCount = Object.values(itemVotes).filter(v => v !== null && v !== undefined).length;
+  const youVoted = pendingItems.length > 0 && yourVoteCount >= pendingItems.length;
+
+  // Simulate other members as having voted (in real app this comes from DB)
+  const votedCount = youVoted ? members.length : (yourVoteCount > 0 ? 1 : 0);
+  const waitingCount = members.length - votedCount;
+  const allVoted = votedCount === members.length && members.length > 0 && pendingItems.length > 0;
+
+  const toggleItemVote = useCallback((itemId: number, direction: 'up' | 'down') => {
     setItemVotes(prev => ({
       ...prev,
       [itemId]: prev[itemId] === direction ? null : direction,
     }));
-  };
+  }, []);
 
-  // Simulated final results (for reveal state)
-  const getItemResult = (item: typeof votingItems[0]) => {
-    const ups = item.id === 2 ? 1 : 3; // simulate: most approved, "Skip Sagrada" rejected
-    const downs = item.id === 2 ? 3 : 1;
-    if (ups > downs) return "approved";
-    if (downs > ups) return "rejected";
-    return "tied";
-  };
+  // Submit all votes — approve items with thumbs up, reject with thumbs down
+  const submitVotes = useCallback(() => {
+    Object.entries(itemVotes).forEach(([id, vote]) => {
+      const numId = Number(id);
+      if (vote === 'up') approveActivity(numId);
+      else if (vote === 'down') rejectActivity(numId);
+    });
+  }, [itemVotes, approveActivity, rejectActivity]);
+
+  const tripName = activeTrip?.name || "Trip";
+  const memberCount = members.length;
+
+  // No proposed activities — show empty state
+  if (proposedActivities.length === 0) {
+    return (
+      <div className="min-h-screen px-5 py-4 max-w-md mx-auto">
+        {!hideHeader && (
+          <div className="flex items-center gap-3 mb-8 pt-1">
+            <Link to="/trips" className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent">
+              <ArrowLeft className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+            </Link>
+            <h1 className="text-[24px] tracking-tight font-semibold text-zinc-900 dark:text-white">Blind Match</h1>
+          </div>
+        )}
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-950 dark:to-purple-900 rounded-[28px] flex items-center justify-center mb-6 border-2 border-purple-200 dark:border-purple-800/50 shadow-xl">
+            <Compass className="w-10 h-10 text-purple-500 dark:text-purple-400" />
+          </div>
+          <h2 className="text-[22px] font-semibold text-zinc-900 dark:text-white mb-3">No activities to vote on</h2>
+          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] leading-relaxed mb-6">
+            Swipe right on activities in <span className="font-semibold text-orange-500">Discover</span> to propose them for your group. They'll show up here for everyone to vote on.
+          </p>
+          <Link
+            to="/"
+            className="px-6 py-3 bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-2xl text-[15px] font-semibold shadow-lg shadow-orange-600/30 hover:shadow-xl transition-all"
+          >
+            Go to Discover
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-5 py-4 max-w-md mx-auto">
@@ -112,214 +128,254 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
         </div>
       </div>
 
-      {/* Title */}
-      {!allVoted && (
-        <div className="text-center mb-8">
-          <h2 className="text-[26px] mb-3 font-semibold tracking-tight leading-tight text-zinc-900 dark:text-white">
-            Votes hidden until<br />everyone's in.
-          </h2>
-          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">
-            No awkward "who's actually coming?" energy.
-          </p>
-        </div>
-      )}
-
-      {/* Progress */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between text-sm mb-3">
-          <span className="text-zinc-500 dark:text-zinc-400 font-medium">{votedCount} of {members.length} voted</span>
-          <span className="text-teal-600 dark:text-teal-400 font-semibold">{Math.round((votedCount / members.length) * 100)}%</span>
-        </div>
-        <div className="h-2.5 bg-zinc-200 dark:bg-zinc-900 rounded-full overflow-hidden border border-zinc-300/50 dark:border-zinc-800">
-          <div 
-            className="h-full bg-gradient-to-r from-teal-600 to-teal-500 transition-all duration-500 shadow-lg shadow-teal-500/50"
-            style={{ width: `${(votedCount / members.length) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Members Card */}
-      <div className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[28px] p-6 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
-        <div className="flex items-center justify-between mb-5 pb-4 border-b border-zinc-100 dark:border-zinc-800">
-          <div className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold">
-            BARCELONA · 4 INVITED
-          </div>
-          <div className="flex items-center gap-1.5 bg-teal-50 dark:bg-teal-900/30 px-3 py-1.5 rounded-lg border border-teal-100/80 dark:border-transparent">
-            <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" strokeWidth={3} />
-            <span className="text-xs font-bold text-teal-600 dark:text-teal-400">{votedCount} VOTED</span>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {members.map((member) => (
-            <div
-              key={member.name}
-              className={`flex items-center justify-between${member.isYou ? " cursor-pointer" : ""}`}
-              onClick={() => member.isYou && toggleVote(member.name)}
-            >
-              <div className="flex items-center gap-3.5">
-                <div className={`w-12 h-12 rounded-2xl ${member.color} flex items-center justify-center text-white shadow-lg border-2 border-white dark:border-zinc-950`}>
-                  <span className="text-lg font-bold">{member.initial}</span>
-                </div>
-                <div>
-                  <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100">
-                    {member.name} {member.isYou && <span className="text-zinc-500 dark:text-zinc-500 font-normal">(You)</span>}
-                  </div>
-                </div>
-              </div>
-              {member.status === "Voted" ? (
-                <div className="flex items-center gap-2 bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-xl border border-teal-100/80 dark:border-teal-800/50">
-                  <Check className="w-4 h-4 text-teal-600 dark:text-teal-400" strokeWidth={2.5} />
-                  <span className="text-xs font-bold text-teal-600 dark:text-teal-400 tracking-wide">VOTED</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 rounded-xl border border-zinc-200/80 dark:border-zinc-800">
-                  <Clock className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
-                  <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 tracking-wide">WAITING</span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Nudge Card */}
-      {waitingCount > 0 && (
-        <button onClick={() => alert('Reminder sent!')} className="w-full bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-900/30 dark:to-yellow-950/30 border-2 border-yellow-200 dark:border-yellow-700/50 rounded-[20px] p-5 flex items-center gap-3 hover:from-yellow-100 hover:to-yellow-50 dark:hover:from-yellow-900/40 dark:hover:to-yellow-950/40 transition-all shadow-sm dark:shadow-none">
-          <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl flex items-center justify-center flex-shrink-0 border border-yellow-200 dark:border-yellow-700/50">
-            <Lightbulb className="w-5 h-5 text-yellow-600 dark:text-yellow-500" fill="currentColor" />
-          </div>
-          <div className="text-left flex-1">
-            <div className="text-yellow-700 dark:text-yellow-500 text-sm font-semibold">
-              {waitingCount} more vote{waitingCount !== 1 ? 's' : ''} needed
-            </div>
-            <div className="text-yellow-600 dark:text-yellow-600/80 text-xs font-medium">
-              Send a friendly reminder
-            </div>
-          </div>
-          <div className="text-yellow-600 dark:text-yellow-500 font-bold">→</div>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1">
+        <button
+          onClick={() => setSelectedTab("voting")}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            selectedTab === "voting"
+              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          Voting ({pendingItems.length})
         </button>
-      )}
+        <button
+          onClick={() => setSelectedTab("decided")}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            selectedTab === "decided"
+              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          Decided ({decidedItems.length})
+        </button>
+      </div>
 
-      {/* Vote Items Section */}
-      {!allVoted && (
-        <div className="mt-8">
-          <div className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-4 px-1">
-            PROPOSED ACTIVITIES
-          </div>
-          {votingItems.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800 mb-3"
-            >
-              <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100 mb-1">
-                {item.title}
-              </div>
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-2">
-                {item.location} {item.city}
-              </div>
-              <p className="text-[15px] text-zinc-500 dark:text-zinc-400 mb-4 leading-relaxed">
-                {item.description}
+      {selectedTab === "voting" && (
+        <>
+          {/* Title */}
+          {!allVoted && (
+            <div className="text-center mb-8">
+              <h2 className="text-[26px] mb-3 font-semibold tracking-tight leading-tight text-zinc-900 dark:text-white">
+                Votes hidden until<br />everyone's in.
+              </h2>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">
+                No awkward "who's actually coming?" energy.
               </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => toggleItemVote(item.id, 'up')}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border transition-all ${
-                      itemVotes[item.id] === 'up'
-                        ? 'bg-teal-50 dark:bg-teal-900/30 border-teal-200 dark:border-teal-800/50 text-teal-600 dark:text-teal-400'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 hover:bg-teal-50 dark:hover:bg-teal-900/20'
-                    }`}
-                  >
-                    <ThumbsUp className="w-4 h-4" strokeWidth={2.5} />
-                    <span className="text-xs font-bold">Yes</span>
-                  </button>
-                  <button
-                    onClick={() => toggleItemVote(item.id, 'down')}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border transition-all ${
-                      itemVotes[item.id] === 'down'
-                        ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                    }`}
-                  >
-                    <ThumbsDown className="w-4 h-4" strokeWidth={2.5} />
-                    <span className="text-xs font-bold">No</span>
-                  </button>
-                </div>
-                <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
-                  {item.votedCount}/{item.totalCount} voted
-                </span>
+            </div>
+          )}
+
+          {/* Progress */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between text-sm mb-3">
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">{votedCount} of {members.length} voted</span>
+              <span className="text-teal-600 dark:text-teal-400 font-semibold">{members.length > 0 ? Math.round((votedCount / members.length) * 100) : 0}%</span>
+            </div>
+            <div className="h-2.5 bg-zinc-200 dark:bg-zinc-900 rounded-full overflow-hidden border border-zinc-300/50 dark:border-zinc-800">
+              <div
+                className="h-full bg-gradient-to-r from-teal-600 to-teal-500 transition-all duration-500 shadow-lg shadow-teal-500/50"
+                style={{ width: `${members.length > 0 ? (votedCount / members.length) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Members Card */}
+          <div className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[28px] p-6 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold">
+                {tripName.toUpperCase()} · {memberCount} MEMBER{memberCount !== 1 ? "S" : ""}
+              </div>
+              <div className="flex items-center gap-1.5 bg-teal-50 dark:bg-teal-900/30 px-3 py-1.5 rounded-lg border border-teal-100/80 dark:border-transparent">
+                <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" strokeWidth={3} />
+                <span className="text-xs font-bold text-teal-600 dark:text-teal-400">{votedCount} VOTED</span>
               </div>
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* Reveal State */}
-      {allVoted && (
-        <div className="mt-8" style={{ animation: 'scaleIn 0.4s ease-out' }}>
-          <style>{`
-            @keyframes scaleIn {
-              0% { opacity: 0; transform: scale(0.92); }
-              100% { opacity: 1; transform: scale(1); }
-            }
-          `}</style>
-          <div className="text-center mb-6">
-            <div className="text-[26px] font-semibold tracking-tight text-zinc-900 dark:text-white mb-1">
-              Results are in! <Sparkles className="inline w-6 h-6 text-yellow-500" />
+            <div className="space-y-4">
+              {members.map((member, i) => {
+                const memberVoted = member.isYou ? youVoted : (allVoted);
+                return (
+                  <div key={member.name + i} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <div className={`w-12 h-12 rounded-2xl ${member.color} flex items-center justify-center text-white shadow-lg border-2 border-white dark:border-zinc-950`}>
+                        <span className="text-lg font-bold">{member.initial}</span>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100">
+                          {member.isYou ? member.name : member.initial}
+                          {member.isYou && <span className="text-zinc-500 dark:text-zinc-500 font-normal"> (You)</span>}
+                        </div>
+                      </div>
+                    </div>
+                    {memberVoted ? (
+                      <div className="flex items-center gap-2 bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-xl border border-teal-100/80 dark:border-teal-800/50">
+                        <Check className="w-4 h-4 text-teal-600 dark:text-teal-400" strokeWidth={2.5} />
+                        <span className="text-xs font-bold text-teal-600 dark:text-teal-400 tracking-wide">VOTED</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 rounded-xl border border-zinc-200/80 dark:border-zinc-800">
+                        <Clock className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+                        <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 tracking-wide">WAITING</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">
-              Everyone voted — here's the verdict.
-            </p>
           </div>
-          <div className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-4 px-1">
-            FINAL RESULTS
-          </div>
-          {votingItems.map((item) => {
-            const result = getItemResult(item);
-            return (
+
+          {/* Nudge Card */}
+          {waitingCount > 0 && !youVoted && (
+            <div className="w-full bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-900/30 dark:to-yellow-950/30 border-2 border-yellow-200 dark:border-yellow-700/50 rounded-[20px] p-5 flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl flex items-center justify-center flex-shrink-0 border border-yellow-200 dark:border-yellow-700/50">
+                <Lightbulb className="w-5 h-5 text-yellow-600 dark:text-yellow-500" fill="currentColor" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="text-yellow-700 dark:text-yellow-500 text-sm font-semibold">
+                  Vote on all activities below
+                </div>
+                <div className="text-yellow-600 dark:text-yellow-600/80 text-xs font-medium">
+                  {pendingItems.length - yourVoteCount} left to vote on
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Vote Items */}
+          <div className="mt-4">
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-4 px-1">
+              PROPOSED ACTIVITIES ({pendingItems.length})
+            </div>
+            {pendingItems.map((item) => (
               <div
                 key={item.id}
                 className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800 mb-3"
-                style={{ animation: `scaleIn 0.4s ease-out ${item.id * 0.08}s both` }}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100">
-                    {item.title}
+                <div className="flex items-start justify-between mb-1">
+                  <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100 flex-1">
+                    {item.name}
                   </div>
-                  {result === "approved" && (
-                    <span className="text-[11px] font-bold tracking-wide bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 px-3 py-1.5 rounded-lg border border-teal-100/80 dark:border-teal-800/50">
-                      APPROVED
-                    </span>
-                  )}
-                  {result === "rejected" && (
-                    <span className="text-[11px] font-bold tracking-wide bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg border border-red-100/80 dark:border-red-800/50">
-                      REJECTED
-                    </span>
-                  )}
-                  {result === "tied" && (
-                    <span className="text-[11px] font-bold tracking-wide bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-lg border border-amber-100/80 dark:border-amber-800/50">
-                      TIED
+                  {item.tags[0] && (
+                    <span className="bg-orange-500/10 text-orange-500 px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 ml-2">
+                      {item.tags[0]}
                     </span>
                   )}
                 </div>
                 <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-2">
-                  {item.location} {item.city}
+                  {item.location} {item.city && `· ${item.city}`}
                 </div>
-                <p className="text-[15px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  {item.description}
-                </p>
+                {item.description && (
+                  <p className="text-[14px] text-zinc-500 dark:text-zinc-400 mb-4 leading-relaxed line-clamp-2">
+                    {item.description}
+                  </p>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleItemVote(item.id, 'up')}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border transition-all ${
+                        itemVotes[item.id] === 'up'
+                          ? 'bg-teal-50 dark:bg-teal-900/30 border-teal-200 dark:border-teal-800/50 text-teal-600 dark:text-teal-400'
+                          : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 hover:bg-teal-50 dark:hover:bg-teal-900/20'
+                      }`}
+                    >
+                      <ThumbsUp className="w-4 h-4" strokeWidth={2.5} />
+                      <span className="text-xs font-bold">Yes</span>
+                    </button>
+                    <button
+                      onClick={() => toggleItemVote(item.id, 'down')}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border transition-all ${
+                        itemVotes[item.id] === 'down'
+                          ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400'
+                          : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                      }`}
+                    >
+                      <ThumbsDown className="w-4 h-4" strokeWidth={2.5} />
+                      <span className="text-xs font-bold">No</span>
+                    </button>
+                  </div>
+                  {itemVotes[item.id] && (
+                    <span className={`text-xs font-semibold ${itemVotes[item.id] === 'up' ? 'text-teal-500' : 'text-red-500'}`}>
+                      {itemVotes[item.id] === 'up' ? '✓ Approved' : '✗ Passed'}
+                    </span>
+                  )}
+                </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Submit votes button */}
+          {yourVoteCount > 0 && (
+            <button
+              onClick={submitVotes}
+              className="w-full mt-4 py-4 bg-gradient-to-br from-purple-600 to-purple-500 text-white rounded-2xl text-[15px] font-bold shadow-lg shadow-purple-600/30 hover:shadow-xl transition-all"
+            >
+              Submit Votes ({yourVoteCount}/{pendingItems.length})
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Decided Tab */}
+      {selectedTab === "decided" && (
+        <div className="mt-4">
+          {decidedItems.length === 0 ? (
+            <div className="text-center py-16 px-6">
+              <div className="text-5xl mb-4">🗳️</div>
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No decisions yet</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[14px]">
+                Vote on proposed activities and submit to see results here.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <div className="text-[22px] font-semibold tracking-tight text-zinc-900 dark:text-white mb-1">
+                  Results <Sparkles className="inline w-5 h-5 text-yellow-500" />
+                </div>
+              </div>
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-4 px-1">
+                DECIDED ({decidedItems.length})
+              </div>
+              {decidedItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white dark:bg-zinc-950 rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800 mb-3"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100">
+                      {item.name}
+                    </div>
+                    {item.status === "approved" && (
+                      <span className="text-[11px] font-bold tracking-wide bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 px-3 py-1.5 rounded-lg border border-teal-100/80 dark:border-teal-800/50">
+                        APPROVED
+                      </span>
+                    )}
+                    {item.status === "rejected" && (
+                      <span className="text-[11px] font-bold tracking-wide bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg border border-red-100/80 dark:border-red-800/50">
+                        REJECTED
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-2">
+                    {item.location} {item.city && `· ${item.city}`}
+                  </div>
+                  <p className="text-[14px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
 
       {/* Info */}
-      <div className="mt-8 p-5 bg-white dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-[20px] shadow-sm dark:shadow-none">
+      <div className="mt-8 mb-8 p-5 bg-white dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-[20px] shadow-sm dark:shadow-none">
         <h4 className="text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">How it works</h4>
         <p className="text-sm text-zinc-600 dark:text-zinc-500 leading-relaxed">
-          Everyone votes on dates privately. Results reveal only when all members submit their availability—ensuring genuine input without peer pressure.
+          When someone swipes right on an activity in Discover, it gets proposed here. Everyone votes privately — thumbs up or down. Results only reveal when you submit. No peer pressure.
         </p>
       </div>
     </div>

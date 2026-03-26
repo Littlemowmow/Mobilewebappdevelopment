@@ -45,6 +45,14 @@ interface Trip {
   code: string;
   memberColors: string[];
   memberInitials: string[];
+  metadata?: {
+    transport_mode?: string;
+    booking_code?: string;
+    transport_cost?: number;
+    hotel_sorted?: string;
+    hotel_cost_per_night?: number;
+    personal_budget?: number;
+  };
 }
 
 interface ProposedActivity {
@@ -696,6 +704,7 @@ function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): 
     code: (dbTrip.invite_code as string) || "------",
     memberColors: ["bg-orange-500"],
     memberInitials: ["Y"],
+    metadata: (dbTrip.metadata as Trip["metadata"]) || undefined,
   };
 }
 

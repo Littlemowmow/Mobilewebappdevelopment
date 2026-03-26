@@ -1,4 +1,4 @@
-import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send, Copy, Share2, Loader2 } from "lucide-react";
+import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send, Copy, Share2, Loader2, Plane, Train, Car, Bus, Ship } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
 import { useState, useEffect } from "react";
@@ -61,7 +61,7 @@ export function TripDetail() {
   return (
     <div className="pb-24">
       {/* Hero Header */}
-      <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-amber-500 px-5 pt-4 pb-6 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-amber-500 px-5 pt-[calc(1rem+env(safe-area-inset-top,0px))] pb-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.07]" style={{backgroundImage: 'radial-gradient(circle at 20% 80%, white 0%, transparent 50%), radial-gradient(circle at 80% 20%, white 0%, transparent 40%)'}} />
         <div className="flex items-center gap-3 mb-6 pt-1">
           <button 
@@ -83,7 +83,9 @@ export function TripDetail() {
           <button
             onClick={() => {
               const next = trip.status === "Active" ? "Completed" : "Active";
-              updateTripStatus(trip.id, next);
+              if (confirm(`Change trip status to ${next}?`)) {
+                updateTripStatus(trip.id, next);
+              }
             }}
             className="bg-white text-orange-600 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-lg inline-block hover:bg-orange-50 transition-colors"
           >
@@ -106,6 +108,39 @@ export function TripDetail() {
             <span className="text-sm font-semibold text-white">{trip.saved}</span>
           </div>
         </div>
+
+        {/* Trip Setup Info */}
+        {trip.metadata && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {trip.metadata.transport_mode && trip.metadata.transport_mode !== "not-decided" && (
+              <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+                <span className="text-sm">
+                  {trip.metadata.transport_mode === "flying" ? "✈️" : trip.metadata.transport_mode === "train" ? "🚆" : trip.metadata.transport_mode === "driving" ? "🚗" : trip.metadata.transport_mode === "bus" ? "🚌" : "🚢"}
+                </span>
+                <span className="text-xs font-semibold text-white capitalize">{trip.metadata.transport_mode}</span>
+                {trip.metadata.transport_cost && <span className="text-xs text-white/70">${trip.metadata.transport_cost}</span>}
+              </div>
+            )}
+            {trip.metadata.hotel_sorted === "yes" && trip.metadata.hotel_cost_per_night && (
+              <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+                <span className="text-sm">🏨</span>
+                <span className="text-xs font-semibold text-white">${trip.metadata.hotel_cost_per_night}/night</span>
+              </div>
+            )}
+            {trip.metadata.personal_budget && (
+              <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+                <span className="text-sm">💰</span>
+                <span className="text-xs font-semibold text-white">${trip.metadata.personal_budget} spending</span>
+              </div>
+            )}
+            {trip.metadata.booking_code && (
+              <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+                <span className="text-sm">🎫</span>
+                <span className="text-xs font-semibold text-white">{trip.metadata.booking_code}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Members */}
         <div className="flex items-center gap-3">
