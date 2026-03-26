@@ -37,6 +37,27 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
   ]);
   results.push(...osmResults, ...wikiResults);
 
+  // Fetch real images from Wikimedia Commons for activities missing them
+  const needImages = results.filter(r => !r.image);
+  if (needImages.length > 0) {
+    await Promise.all(needImages.slice(0, 8).map(async (place) => {
+      try {
+        const res = await fetch(
+          `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(place.name + " " + cityName)}&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=500&format=json&origin=*`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const pages = data.query?.pages;
+          if (pages) {
+            const page = Object.values(pages)[0] as any;
+            const url = page?.imageinfo?.[0]?.thumburl;
+            if (url && !url.includes(".svg")) place.image = url;
+          }
+        }
+      } catch { /* silent */ }
+    }));
+  }
+
   // Cache and return
   activityCache[cityName] = results;
   return results;
@@ -450,7 +471,7 @@ export function Discover() {
       {/* Header */}
       <div className="flex justify-between items-center mb-5 pt-1">
         <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">Discover</h1>
-        <button className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent">
+        <button className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-zinc-200/50 dark:border-zinc-700/50 hover:scale-105">
           <Filter className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
         </button>
       </div>
@@ -542,13 +563,15 @@ export function Discover() {
         ) : (
           <div className="h-full flex items-center justify-center">
             <div className="text-center px-8">
-              <div className="text-6xl mb-4">{activeTrip && activeCityName ? "🗺️" : "✨"}</div>
-              <h3 className="text-xl text-zinc-900 dark:text-white mb-2">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/20 flex items-center justify-center mx-auto mb-4 border border-orange-200/50 dark:border-orange-800/30">
+                <span className="text-4xl">{activeTrip && activeCityName ? "🗺️" : "✨"}</span>
+              </div>
+              <h3 className="text-xl text-zinc-900 dark:text-white mb-2 font-semibold">
                 {activeTrip && activeCityName
                   ? `You've seen everything in ${activeCityName}`
                   : "All Caught Up!"}
               </h3>
-              <p className="text-zinc-500 dark:text-zinc-400 text-[15px]">
+              <p className="text-zinc-500 dark:text-zinc-300 text-[15px]">
                 {activeTrip && activeCityName
                   ? "Try another city or check back later"
                   : "Check back later for more recommendations"}
@@ -563,17 +586,17 @@ export function Discover() {
         <div className="flex justify-between items-center text-[13px] text-zinc-600 dark:text-zinc-400 mb-3 px-1 font-medium">
           <div className="flex items-center gap-1.5">
             <X className="w-4 h-4 text-red-500 dark:text-red-400" />
-            <span>Pass</span>
+            <span className="font-semibold text-red-500/80 dark:text-red-400/80">Pass</span>
           </div>
-          <span className="text-zinc-400 dark:text-zinc-500 tracking-wider text-[11px] uppercase">Intensity</span>
+          <span className="text-zinc-400 dark:text-zinc-500 tracking-wider text-[11px] uppercase font-semibold">Intensity</span>
           <div className="flex items-center gap-1.5">
-            <span>Save</span>
+            <span className="font-semibold text-teal-500/80 dark:text-teal-400/80">Save</span>
             <Heart className="w-4 h-4 text-teal-500 dark:text-teal-400" />
           </div>
         </div>
 
         {/* Gradient Slider */}
-        <div className="relative h-[60px] rounded-full bg-gradient-to-r from-red-50 dark:from-red-950/30 via-zinc-100 dark:via-zinc-900 to-teal-50 dark:to-teal-950/30 border-2 border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-lg dark:shadow-xl">
+        <div className="relative h-[60px] rounded-full bg-gradient-to-r from-red-100/80 dark:from-red-950/50 via-zinc-100 dark:via-zinc-800/60 to-teal-100/80 dark:to-teal-950/50 border-2 border-zinc-200/80 dark:border-zinc-700/60 overflow-hidden shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
           {/* Active gradient overlay */}
           <div
             className="absolute inset-0 transition-all duration-150"
@@ -730,9 +753,14 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="h-full rounded-[28px] overflow-hidden bg-white dark:bg-zinc-900 shadow-xl border border-zinc-200/50 dark:border-transparent flex flex-col">
+      <div className="h-full rounded-[28px] overflow-hidden bg-white dark:bg-zinc-900 shadow-2xl dark:shadow-[0_8px_50px_rgba(0,0,0,0.6)] border border-zinc-200/50 dark:border-zinc-700/40 flex flex-col">
         {/* Image */}
-        <div className="relative flex-1 min-h-0 bg-gradient-to-br from-orange-900 to-orange-700">
+        <div className="relative flex-1 min-h-0 bg-gradient-to-br from-orange-600 via-rose-500 to-amber-500">
+          {!imageSrc && (
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-rose-500 to-purple-600">
+              <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(255,255,255,0.15) 0%, transparent 50%)'}} />
+            </div>
+          )}
           {imageSrc && (
             <ImageWithFallback
               src={imageSrc}
@@ -741,8 +769,9 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
             />
           )}
 
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
+          {/* Overlay gradient — premium depth */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/20" />
+          <div className="absolute inset-0 shadow-[inset_0_-60px_60px_-30px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(0,0,0,0.1)]" />
 
           {/* Swipe Indicators */}
           <motion.div
@@ -772,7 +801,7 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
         </div>
 
         {/* Content — tappable for details */}
-        <div className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white p-6 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-900 transition-colors" onClick={onTap}>
+        <div className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white p-6 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-800 transition-all duration-200" onClick={onTap}>
           <div className="mb-4">
             <h3 className="text-[22px] leading-tight mb-2 font-semibold text-zinc-900 dark:text-white">{place.name}</h3>
 
@@ -786,7 +815,7 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
             </p>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
+          <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-700/50">
             <div className="flex items-center gap-4">
               <span className="text-zinc-700 dark:text-zinc-300 text-[15px] font-medium">{place.price}</span>
               <span className="text-zinc-500 dark:text-zinc-400 text-[14px]">{place.duration}</span>

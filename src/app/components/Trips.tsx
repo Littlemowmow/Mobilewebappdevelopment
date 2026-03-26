@@ -78,7 +78,7 @@ export function Trips() {
       </div>
 
       {/* Join Trip */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mb-5 flex gap-3 items-center">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-4 mb-5 flex gap-3 items-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
         <input
           type="text"
           placeholder="Enter trip code"
@@ -106,10 +106,11 @@ export function Trips() {
             <button
               key={trip.id}
               onClick={() => handleTripClick(trip)}
-              className="w-full rounded-[28px] overflow-hidden shadow-xl border border-zinc-200/50 dark:border-transparent mb-5 text-left"
+              className="w-full rounded-[28px] overflow-hidden shadow-xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] border border-zinc-200/50 dark:border-zinc-700/30 mb-5 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
             >
               {/* Header */}
-              <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-orange-600 p-6">
+              <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-amber-500 p-6 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.4) 0%, transparent 50%)'}} />
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h2 className="text-[24px] mb-1.5 font-semibold tracking-tight text-white">{trip.name}</h2>
@@ -119,7 +120,7 @@ export function Trips() {
                   </div>
                   <div className="flex items-center gap-2">
                     {typeof trip.id === "number" && (
-                      <span className="bg-purple-100 text-purple-600 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-lg">
+                      <span className="bg-gradient-to-r from-purple-500 to-violet-500 text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-lg border border-purple-400/30">
                         DEMO
                       </span>
                     )}
@@ -131,7 +132,7 @@ export function Trips() {
               </div>
 
               {/* Content */}
-              <div className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white p-6">
+              <div className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white p-6">
                 {/* Cities */}
                 <div className="flex items-center justify-between mb-6 overflow-x-auto pb-2">
                   {trip.cities.map((city, index) => (
@@ -141,7 +142,7 @@ export function Trips() {
                           <span className="text-2xl">{city.flag}</span>
                         </div>
                         <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{city.name}</span>
-                        <span className="text-xs text-zinc-500 dark:text-zinc-500 font-medium mt-0.5">{city.days}d</span>
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">{city.days}d</span>
                       </div>
                       {index < trip.cities.length - 1 && (
                         <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 mb-8 flex-shrink-0" strokeWidth={2} />
@@ -151,7 +152,7 @@ export function Trips() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-5 mb-5 pb-5 border-b border-zinc-100 dark:border-zinc-800">
+                <div className="flex items-center gap-5 mb-5 pb-5 border-b border-zinc-100 dark:border-zinc-700/50">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center border border-orange-100/50 dark:border-transparent">
                       <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" strokeWidth={2} />
@@ -179,7 +180,7 @@ export function Trips() {
                       {trip.memberInitials.map((initial, index) => (
                         <div
                           key={index}
-                          className={`w-10 h-10 rounded-full ${trip.memberColors[index]} flex items-center justify-center text-white text-sm font-bold border-[3px] border-white dark:border-zinc-950 shadow-md`}
+                          className={`w-10 h-10 rounded-full ${trip.memberColors[index]} flex items-center justify-center text-white text-sm font-bold border-[3px] border-white dark:border-zinc-900 shadow-md`}
                         >
                           {initial}
                         </div>
@@ -205,7 +206,7 @@ export function Trips() {
             <button
               key={trip.id}
               onClick={() => handleTripClick(trip)}
-              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[24px] p-5 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors shadow-sm dark:shadow-none mb-3"
+              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-[24px] p-5 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all duration-200 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] mb-3 hover:scale-[1.01] active:scale-[0.99]"
             >
               <div className="bg-orange-50 dark:bg-orange-900/30 p-4 rounded-2xl border border-orange-100/80 dark:border-orange-800/50">
                 <span className="text-3xl">{trip.cities[0]?.flag || "🌍"}</span>
@@ -229,9 +230,9 @@ export function Trips() {
             <button
               key={trip.id}
               onClick={() => handleTripClick(trip)}
-              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[24px] p-5 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors shadow-sm dark:shadow-none mb-3"
+              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-[24px] p-5 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all duration-200 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] mb-3 hover:scale-[1.01] active:scale-[0.99]"
             >
-              <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-700">
+              <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50">
                 <span className="text-3xl">{trip.cities[0].flag}</span>
               </div>
               <div className="flex-1 text-left">
@@ -247,15 +248,15 @@ export function Trips() {
       {/* Plan New Trip */}
       <Link 
         to="/trips/new"
-        className="block bg-white dark:bg-zinc-950 border-2 border-zinc-200 dark:border-zinc-800 border-dashed rounded-[28px] p-10 text-center hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all shadow-sm dark:shadow-none"
+        className="block bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-900/80 border-2 border-zinc-200 dark:border-zinc-700/50 border-dashed rounded-[28px] p-10 text-center hover:border-orange-300 dark:hover:border-orange-700/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all duration-200 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]"
       >
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center">
-            <Plus className="w-8 h-8 text-zinc-500 dark:text-zinc-600" strokeWidth={2} />
+            <Plus className="w-8 h-8 text-zinc-400 dark:text-zinc-500" strokeWidth={2} />
           </div>
         </div>
         <h3 className="text-xl mb-2 font-semibold text-zinc-900 dark:text-white">Plan a New Trip</h3>
-        <p className="text-zinc-500 dark:text-zinc-500 text-[15px]">One city or many — we handle the route</p>
+        <p className="text-zinc-500 dark:text-zinc-400 text-[15px]">One city or many — we handle the route</p>
       </Link>
     </div>
   );

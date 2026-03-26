@@ -61,7 +61,8 @@ export function TripDetail() {
   return (
     <div className="pb-24">
       {/* Hero Header */}
-      <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-orange-600 px-5 pt-4 pb-6">
+      <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-amber-500 px-5 pt-4 pb-6 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.07]" style={{backgroundImage: 'radial-gradient(circle at 20% 80%, white 0%, transparent 50%), radial-gradient(circle at 80% 20%, white 0%, transparent 40%)'}} />
         <div className="flex items-center gap-3 mb-6 pt-1">
           <button 
             onClick={() => {
