@@ -66,12 +66,15 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
 async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): Promise<Place[]> {
   const results: Place[] = [];
   try {
-    const query = `[out:json][timeout:12];(
-      node["tourism"~"attraction|museum|viewpoint|artwork|gallery"](around:10000,${lat},${lon});
-      node["historic"~"temple|shrine|castle|monument|memorial"](around:10000,${lat},${lon});
-      node["amenity"~"restaurant|cafe|marketplace|theatre"](around:10000,${lat},${lon});
-      node["leisure"~"park|garden|nature_reserve"](around:10000,${lat},${lon});
-    );out body 30;`;
+    const query = `[out:json][timeout:15];(
+      node["tourism"~"attraction|museum|viewpoint|artwork|gallery|theme_park|zoo|aquarium"](around:12000,${lat},${lon});
+      node["historic"~"temple|shrine|castle|monument|memorial|ruins|fort|archaeological_site"](around:12000,${lat},${lon});
+      node["amenity"~"restaurant|cafe|marketplace|theatre|cinema|community_centre|ice_cream"](around:12000,${lat},${lon});
+      node["leisure"~"park|garden|nature_reserve|stadium|water_park|beach_resort|sports_centre"](around:12000,${lat},${lon});
+      node["shop"~"mall|department_store"](around:12000,${lat},${lon});
+      way["tourism"~"attraction|museum|theme_park|zoo|aquarium"](around:12000,${lat},${lon});
+      way["leisure"~"park|garden|stadium|beach_resort"](around:12000,${lat},${lon});
+    );out body 50;`;
     const osmRes = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       body: `data=${encodeURIComponent(query)}`,
@@ -93,15 +96,19 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
         const leisure = t.leisure || "";
 
         // Categorize
-        const cat = historic.includes("temple") || historic.includes("shrine") ? "Culture"
-          : tourism === "museum" || tourism === "gallery" ? "Culture"
+        const shop = t.shop || "";
+        const cat = historic ? "Culture"
+          : tourism === "museum" || tourism === "gallery" || tourism === "artwork" ? "Culture"
           : tourism === "viewpoint" ? "Views"
-          : historic.includes("castle") || historic.includes("monument") ? "Culture"
-          : amenity === "restaurant" || amenity === "cafe" ? "Food"
+          : tourism === "theme_park" || tourism === "zoo" || tourism === "aquarium" ? "Entertainment"
+          : amenity === "restaurant" || amenity === "cafe" || amenity === "ice_cream" ? "Food"
           : amenity === "marketplace" ? "Food"
-          : amenity === "theatre" ? "Entertainment"
-          : leisure === "park" || leisure === "garden" ? "Nature"
-          : "SideQuest";
+          : amenity === "theatre" || amenity === "cinema" ? "Entertainment"
+          : leisure === "park" || leisure === "garden" || leisure === "nature_reserve" ? "Nature"
+          : leisure === "stadium" || leisure === "sports_centre" || leisure === "water_park" ? "Entertainment"
+          : shop === "mall" || shop === "department_store" ? "Shopping"
+          : tourism === "attraction" ? "Must See"
+          : "Explore";
 
         const description = t.description
           || t["description:en"]
@@ -123,7 +130,22 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
           price: amenity === "restaurant" ? "$$" : t.fee === "yes" ? "$" : "",
           duration: tourism === "museum" ? "1-2h" : historic ? "30min-1h" : "",
           rating: 0,
-          tags: [cat, "SideQuest"],
+          tags: [cat, (() => {
+            // Human-readable second tag from raw OSM data
+            const raw = tourism || historic || amenity || leisure || shop || "";
+            const labelMap: Record<string, string> = {
+              attraction: "Popular", museum: "Museum", viewpoint: "Viewpoint", artwork: "Art",
+              gallery: "Gallery", theme_park: "Theme Park", zoo: "Zoo", aquarium: "Aquarium",
+              temple: "Temple", shrine: "Shrine", castle: "Castle", monument: "Monument",
+              memorial: "Memorial", ruins: "Ruins", fort: "Fort", archaeological_site: "Historic",
+              restaurant: "Restaurant", cafe: "Café", marketplace: "Market", theatre: "Theatre",
+              cinema: "Cinema", ice_cream: "Dessert", community_centre: "Community",
+              park: "Park", garden: "Garden", nature_reserve: "Nature", stadium: "Stadium",
+              water_park: "Water Park", sports_centre: "Sports", beach_resort: "Beach",
+              mall: "Shopping Mall", department_store: "Shopping",
+            };
+            return labelMap[raw] || "Activity";
+          })()],
           image: t.image || t.wikimedia_commons || "",
           city: cityName,
         });
@@ -173,7 +195,7 @@ async function fetchWikipediaPlaces(lat: number, lon: number, cityName: string):
               price: "",
               duration: "",
               rating: 0,
-              tags: ["Culture", "SideQuest"],
+              tags: ["Culture", "Landmark"],
               image: page.thumbnail?.source || "",
               city: cityName,
             });
@@ -223,7 +245,7 @@ function mapActivityToPlace(activity: any): Place {
 
   const tags: string[] = Array.isArray(activity.tags) && activity.tags.length > 0
     ? activity.tags.slice(0, 2)
-    : ["SideQuest", activity.experience_tag || "Adventure"].slice(0, 2);
+    : [activity.experience_tag || "Explore", "Activity"].slice(0, 2);
 
   const image =
     (Array.isArray(activity.images) && activity.images.length > 0 && activity.images[0]) ||
@@ -266,25 +288,6 @@ function calcIntensityScore(normalizedDrag: number): number {
 function truncateDescription(desc: string, max = 80): string {
   if (!desc || desc.length <= max) return desc;
   return desc.slice(0, max).replace(/\s+\S*$/, "") + "...";
-}
-
-/** Map tags to "Best For" audience labels */
-function tagsToBestFor(tags: string[]): string[] {
-  const map: Record<string, string> = {
-    Culture: "Culture lovers",
-    Food: "Foodies",
-    Nature: "Nature lovers",
-    Views: "Photographers",
-    SideQuest: "Adventurers",
-    Entertainment: "Night owls",
-  };
-  const result: string[] = [];
-  for (const tag of tags) {
-    if (map[tag]) result.push(map[tag]);
-  }
-  // Always include at least one
-  if (result.length === 0) result.push("Adventurers");
-  return result;
 }
 
 
@@ -505,7 +508,7 @@ export function Discover() {
   const remainingCards = filteredPlaces.length - currentIndex;
 
   return (
-    <div className="px-5 py-4 h-screen flex flex-col max-w-md mx-auto">
+    <div className="px-5 pt-4 pb-0 flex flex-col max-w-md mx-auto" style={{ height: 'calc(100dvh - 5rem)' }}>
       {/* Header */}
       <div className="flex justify-between items-center mb-5 pt-1">
         <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">Discover</h1>
@@ -585,7 +588,7 @@ export function Discover() {
       </div>
 
       {/* Card Stack */}
-      <div className="flex-1 relative mb-5 min-h-0">
+      <div className="flex-1 relative mb-3 min-h-0">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center px-8">
@@ -662,7 +665,7 @@ export function Discover() {
       </div>
 
       {/* Intensity Slider */}
-      <div className="pb-1">
+      <div className="pb-2 shrink-0">
         <div className="flex justify-between items-center text-[13px] text-zinc-600 dark:text-zinc-400 mb-3 px-1 font-medium">
           <div className="flex items-center gap-1.5">
             <X className="w-4 h-4 text-red-500 dark:text-red-400" />
@@ -723,15 +726,23 @@ export function Discover() {
 
       {/* Activity Detail Modal */}
       {showDetail && currentPlace && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowDetail(false)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[env(safe-area-inset-top,0px)]" onClick={() => setShowDetail(false)}>
           <div className="absolute inset-0 bg-black/60" />
           <div
-            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[28px] max-h-[90vh] min-h-[60vh] overflow-y-auto"
+            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-b-[28px] rounded-t-none max-h-[92dvh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close button */}
+            <button
+              onClick={() => setShowDetail(false)}
+              className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+
             {/* Image */}
             {currentPlace.image && (currentPlace.image.startsWith("http")) && (
-              <div className="h-48 w-full overflow-hidden rounded-t-[28px]">
+              <div className="h-56 w-full overflow-hidden">
                 <img src={currentPlace.image} alt={currentPlace.name} className="w-full h-full object-cover" />
               </div>
             )}
@@ -755,61 +766,18 @@ export function Discover() {
                 {currentPlace.description}
               </p>
 
-              {/* Getting There */}
-              {currentPlace.location && (
-                <div className="mb-5">
-                  <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
-                    <span>📍</span> Getting There
-                  </h3>
-                  <p className="text-zinc-600 dark:text-zinc-400 text-[14px]">
-                    {currentPlace.location} — {currentPlace.tags[0] || "Attraction"}
-                  </p>
-                </div>
-              )}
-
-              {/* Best For */}
-              <div className="mb-5">
-                <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span>✨</span> Best For
-                </h3>
-                <div className="flex gap-2 flex-wrap">
-                  {tagsToBestFor(currentPlace.tags).map((label) => (
-                    <span key={label} className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded-full text-xs font-medium">
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* About this place — only show if description is substantial */}
-              {currentPlace.description && currentPlace.description.length > 50 && (
-                <div className="mb-5">
-                  <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
-                    <span>📖</span> About this place
-                  </h3>
-                  <p className="text-zinc-600 dark:text-zinc-400 text-[14px] leading-relaxed">
-                    {currentPlace.description}
-                  </p>
-                </div>
-              )}
-
-              {/* Details */}
-              <div className="flex items-center gap-4 mb-6 pb-5 border-b border-zinc-100 dark:border-zinc-800">
+              {/* Quick Info Chips */}
+              <div className="flex gap-2 flex-wrap mb-5">
                 {currentPlace.price && (
-                  <div className="bg-zinc-100 dark:bg-zinc-900 px-3 py-2 rounded-xl">
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-white">{currentPlace.price}</span>
-                  </div>
+                  <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded-full text-xs font-medium">{currentPlace.price}</span>
                 )}
                 {currentPlace.duration && (
-                  <div className="bg-zinc-100 dark:bg-zinc-900 px-3 py-2 rounded-xl">
-                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{currentPlace.duration}</span>
-                  </div>
+                  <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded-full text-xs font-medium">{currentPlace.duration}</span>
                 )}
                 {currentPlace.rating > 0 && (
-                  <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 rounded-xl">
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">{currentPlace.rating.toFixed(1)}</span>
-                  </div>
+                  <span className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-current" /> {currentPlace.rating.toFixed(1)}
+                  </span>
                 )}
               </div>
 
@@ -865,7 +833,10 @@ function getNoImageStyle(tags: string[]): { gradient: string; emoji: string } {
   if (primary === "Food") return { gradient: "from-orange-600 to-red-600", emoji: "🍜" };
   if (primary === "Nature") return { gradient: "from-emerald-600 to-teal-700", emoji: "🌿" };
   if (primary === "Views") return { gradient: "from-sky-500 to-blue-700", emoji: "🌅" };
-  return { gradient: "from-zinc-700 to-zinc-900", emoji: "✨" };
+  if (primary === "Entertainment") return { gradient: "from-pink-600 to-rose-700", emoji: "🎭" };
+  if (primary === "Shopping") return { gradient: "from-fuchsia-600 to-purple-700", emoji: "🛍️" };
+  if (primary === "Must See") return { gradient: "from-amber-500 to-orange-600", emoji: "⭐" };
+  return { gradient: "from-zinc-700 to-zinc-900", emoji: "📍" };
 }
 
 function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
