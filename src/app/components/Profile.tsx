@@ -1,10 +1,10 @@
-import { Settings, Bell, HelpCircle, LogOut, ChevronRight, User, Award, Map, Moon, Sun, BellOff, Check, X } from "lucide-react";
+import { Settings, Bell, HelpCircle, LogOut, ChevronRight, User, Award, Map, Moon, Sun, BellOff, Check, X, Camera } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function Profile() {
   const { theme, toggleTheme } = useTheme();
@@ -17,6 +17,9 @@ export function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const emailPrefix = user?.email ? user.email.split("@")[0] : "";
   const displayName = profile?.display_name || profile?.name || emailPrefix || "User";
@@ -28,7 +31,48 @@ export function Profile() {
     ? (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase()
     : (displayName.charAt(0).toUpperCase() || (emailPrefix ? emailPrefix.charAt(0).toUpperCase() : "?"));
 
-  const avatarUrl = profile?.avatar_url || null;
+  const avatarUrl = localAvatarUrl || profile?.avatar_url || null;
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    setAvatarUploading(true);
+    try {
+      const filePath = `${user.id}/${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Avatar upload error:', uploadError);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData.publicUrl;
+
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      setLocalAvatarUrl(publicUrl);
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    } finally {
+      setAvatarUploading(false);
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   // Derive real stats from trips
   const uniqueCities = new Set(trips.flatMap(t => t.cities.map(c => c.name)));
@@ -81,14 +125,38 @@ export function Profile() {
 
       {/* User Info */}
       <div className="flex items-center gap-4 mb-8 bg-gradient-to-br from-zinc-100 to-white dark:from-zinc-900 dark:to-zinc-800/50 p-5 rounded-[24px] border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
-        <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-pink-500 rounded-[20px] flex items-center justify-center text-white shadow-lg shadow-orange-500/25 border-2 border-white/10 relative overflow-hidden">
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleAvatarUpload}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={handleAvatarClick}
+          disabled={avatarUploading}
+          className="w-20 h-20 bg-gradient-to-br from-orange-500 to-pink-500 rounded-[20px] flex items-center justify-center text-white shadow-lg shadow-orange-500/25 border-2 border-white/10 relative overflow-hidden cursor-pointer group"
+        >
           <div className="absolute inset-0 rounded-[20px] shadow-[0_0_20px_rgba(249,115,22,0.2)]" />
           {avatarUrl ? (
             <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-[20px] relative z-10" />
           ) : (
             <span className="text-2xl font-bold relative z-10">{displayInitials}</span>
           )}
-        </div>
+          {/* Camera overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors rounded-[20px] z-20 flex items-center justify-center">
+            <Camera className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          {/* Always-visible camera badge */}
+          <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center shadow-md z-30 border-2 border-zinc-100 dark:border-zinc-700">
+            {avatarUploading ? (
+              <div className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Camera className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
+            )}
+          </div>
+        </button>
         <div className="flex-1">
           {isEditing ? (
             <div className="flex items-center gap-2">

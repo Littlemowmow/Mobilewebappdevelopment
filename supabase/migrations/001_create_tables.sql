@@ -168,3 +168,20 @@ CREATE INDEX IF NOT EXISTS idx_trip_members_trip ON trip_members(trip_id);
 CREATE INDEX IF NOT EXISTS idx_schedule_trip ON schedule_activities(trip_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_trip ON trip_expenses(trip_id);
 CREATE INDEX IF NOT EXISTS idx_required_expenses_trip ON trip_required_expenses(trip_id);
+
+-- Storage bucket for avatar uploads
+INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Anyone can read avatars, authenticated users can upload their own
+CREATE POLICY "Public avatars" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+CREATE POLICY "Users upload own avatar" ON storage.objects FOR INSERT WITH CHECK (
+  bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]
+);
+CREATE POLICY "Users update own avatar" ON storage.objects FOR UPDATE USING (
+  bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Enable realtime for trips and members
+ALTER PUBLICATION supabase_realtime ADD TABLE trips;
+ALTER PUBLICATION supabase_realtime ADD TABLE trip_members;

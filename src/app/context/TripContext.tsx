@@ -325,6 +325,34 @@ export function TripProvider({ children }: { children: ReactNode }) {
     loadTrips();
   }, [loadTrips]);
 
+  // Real-time subscription for trip updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('trip-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'trips'
+      }, () => {
+        // Reload trips when any trip changes
+        loadTrips();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'trip_members'
+      }, () => {
+        loadTrips();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, loadTrips]);
+
   const createTrip = async (data: CreateTripData): Promise<{ error: string | null; tripId?: string | number }> => {
     if (!user) return { error: "You must be logged in to create a trip" };
     if (isCreatingTrip) return { error: "Already creating a trip, please wait..." };
