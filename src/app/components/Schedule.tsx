@@ -1,4 +1,4 @@
-import { Plane, Home, Landmark, ChevronRight, Clock, ArrowLeft, Camera, Utensils, Music, ShoppingBag, Coffee, X } from "lucide-react";
+import { Plane, Home, Landmark, ChevronRight, Clock, ArrowLeft, Camera, Utensils, Music, ShoppingBag, Coffee, X, MapPin } from "lucide-react";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -28,7 +28,7 @@ const TYPE_CONFIG: Record<string, { badge: string; badgeColor: string; icon: Luc
 };
 
 export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
-  const { activeTrip, setActiveTrip, approvedActivities } = useTrip();
+  const { activeTrip, setActiveTrip, approvedActivities, proposedActivities } = useTrip();
   const { user } = useAuth();
   const [selectedCity, setSelectedCity] = useState(0);
   const [selectedDay, setSelectedDay] = useState(0);
@@ -386,6 +386,73 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
           );
         })}
       </div>
+      )}
+
+      {/* Saved from Discover — proposed activities you can add to this day */}
+      {proposedActivities.length > 0 && (
+        <div className="mt-6 mb-4">
+          <h3 className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-3 px-1">
+            SAVED FROM DISCOVER ({proposedActivities.length})
+          </h3>
+          <div className="space-y-2">
+            {proposedActivities.filter(a => a.status === "pending" || a.status === "approved").map((activity) => (
+              <div
+                key={`proposed-${activity.id}`}
+                className="bg-white dark:bg-zinc-950 rounded-2xl p-4 border border-zinc-200/50 dark:border-zinc-800 shadow-sm flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center shrink-0 border border-orange-100 dark:border-orange-800/30">
+                  <span className="text-lg">{activity.tags?.[0] === "Food" ? "🍜" : activity.tags?.[0] === "Culture" ? "🏛️" : activity.tags?.[0] === "Nature" ? "🌿" : "📍"}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-[14px] text-zinc-900 dark:text-zinc-100 truncate">{activity.name}</div>
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{activity.location || activity.city}</div>
+                </div>
+                <button
+                  onClick={() => {
+                    const newActivity: Activity = {
+                      id: activity.id,
+                      icon: MapPin,
+                      title: activity.name,
+                      time: "TBD",
+                      duration: activity.duration || "",
+                      price: activity.price || "",
+                      iconBg: "bg-orange-50 dark:bg-orange-900/30",
+                      iconColor: "text-orange-600 dark:text-orange-400",
+                      dotColor: "bg-orange-500",
+                      subtitle: activity.location || activity.city,
+                      badge: "DISCOVER",
+                    };
+                    const actKey = `${selectedCity}-${selectedDay}`;
+                    setAddedActivities(prev => ({
+                      ...prev,
+                      [actKey]: [...(prev[actKey] || []), newActivity],
+                    }));
+                    // Also persist to Supabase
+                    if (activeTrip && user) {
+                      supabase.from("schedule_activities").insert({
+                        trip_id: String(activeTrip.id),
+                        user_id: user.id,
+                        name: activity.name,
+                        time: "TBD",
+                        duration: activity.duration || "",
+                        price: activity.price || "",
+                        city: currentCity.name,
+                        day: selectedDay,
+                        badge: "DISCOVER",
+                        notes: activity.location || activity.city,
+                      }).then(({ error }) => {
+                        if (error) console.warn("Failed to save:", error.message);
+                      });
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-orange-500 text-white rounded-xl text-xs font-bold shrink-0 hover:bg-orange-600 transition-colors"
+                >
+                  + Day {selectedDay + 1}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Add Activity Button */}
