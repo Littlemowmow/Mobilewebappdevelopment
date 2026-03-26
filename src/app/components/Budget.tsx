@@ -771,6 +771,108 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             </div>
           </div>
 
+          {/* Spending Breakdown Pie Chart */}
+          {(totalSpent > 0 || requiredExpenses.length > 0) && (() => {
+            // Core trip costs (from fund lock / required expenses)
+            const coreCosts = requiredExpenses.reduce((sum, e) => sum + e.total, 0);
+            // Personal/discretionary spending (from logged expenses)
+            const personalSpending = localExpenses.reduce((sum, e) => sum + e.amount, 0);
+            const totalAll = coreCosts + personalSpending || 1;
+
+            // Category breakdown for personal spending
+            const categoryTotals: Record<string, number> = {};
+            localExpenses.forEach(e => {
+              categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
+            });
+
+            // Pie chart segments
+            const CHART_COLORS = [
+              "#ea580c", // orange - core
+              "#14b8a6", // teal
+              "#3b82f6", // blue
+              "#ec4899", // pink
+              "#a855f7", // purple
+              "#f59e0b", // amber
+              "#6366f1", // indigo
+            ];
+
+            const segments: { label: string; amount: number; color: string; emoji: string }[] = [];
+            if (coreCosts > 0) segments.push({ label: "Core Trip Costs", amount: coreCosts, color: CHART_COLORS[0], emoji: "🔒" });
+            Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).forEach(([cat, amt], i) => {
+              const meta = CATEGORY_META[cat];
+              segments.push({ label: cat, amount: amt, color: CHART_COLORS[(i + 1) % CHART_COLORS.length], emoji: meta?.emoji || "📦" });
+            });
+
+            // Build SVG conic gradient via stroke-dasharray circles
+            let cumPercent = 0;
+            const circumference = 2 * Math.PI * 70; // r=70
+
+            return (
+              <div className="bg-white dark:bg-zinc-950 rounded-[28px] p-6 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
+                <h3 className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-5 text-center">SPENDING BREAKDOWN</h3>
+
+                <div className="flex items-center gap-6">
+                  {/* SVG Donut Chart */}
+                  <div className="relative w-36 h-36 shrink-0">
+                    <svg viewBox="0 0 160 160" className="w-full h-full -rotate-90">
+                      {segments.map((seg, i) => {
+                        const percent = seg.amount / totalAll;
+                        const dashLength = percent * circumference;
+                        const dashOffset = cumPercent * circumference;
+                        cumPercent += percent;
+                        return (
+                          <circle
+                            key={i}
+                            cx="80" cy="80" r="70"
+                            fill="none"
+                            stroke={seg.color}
+                            strokeWidth="20"
+                            strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+                            strokeDashoffset={-dashOffset}
+                            className="transition-all duration-500"
+                          />
+                        );
+                      })}
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-[22px] font-bold text-zinc-900 dark:text-white">${totalAll.toLocaleString()}</span>
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">TOTAL</span>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex-1 space-y-2.5">
+                    {segments.map((seg, i) => (
+                      <div key={i} className="flex items-center gap-2.5">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 truncate">{seg.emoji} {seg.label}</div>
+                          <div className="text-[11px] text-zinc-500 dark:text-zinc-400">${seg.amount.toLocaleString()} · {Math.round((seg.amount / totalAll) * 100)}%</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Core vs Personal summary */}
+                {coreCosts > 0 && personalSpending > 0 && (
+                  <div className="flex gap-3 mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                    <div className="flex-1 bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-3 text-center border border-orange-100 dark:border-orange-800/30">
+                      <div className="text-[11px] text-orange-600 dark:text-orange-400 font-bold tracking-wide mb-1">🔒 CORE</div>
+                      <div className="text-lg font-bold text-orange-600 dark:text-orange-400">${coreCosts.toLocaleString()}</div>
+                      <div className="text-[10px] text-orange-500/70 dark:text-orange-400/60">Flights, hotels, transport</div>
+                    </div>
+                    <div className="flex-1 bg-teal-50 dark:bg-teal-900/20 rounded-2xl p-3 text-center border border-teal-100 dark:border-teal-800/30">
+                      <div className="text-[11px] text-teal-600 dark:text-teal-400 font-bold tracking-wide mb-1">💸 PERSONAL</div>
+                      <div className="text-lg font-bold text-teal-600 dark:text-teal-400">${personalSpending.toLocaleString()}</div>
+                      <div className="text-[10px] text-teal-500/70 dark:text-teal-400/60">Food, shopping, activities</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* By Destination */}
           <div className="mb-5">
             <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">By Destination</h3>
