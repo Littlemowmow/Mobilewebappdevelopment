@@ -81,8 +81,8 @@ interface TripContextType {
   proposeActivity: (activity: Omit<ProposedActivity, "status">) => void;
   approveActivity: (id: number) => void;
   rejectActivity: (id: number) => void;
-  addMember: (tripId: number, name: string, color: string) => void;
-  removeMember: (tripId: number, memberIndex: number) => void;
+  addMember: (tripId: number | string, name: string, color: string) => void;
+  removeMember: (tripId: number | string, memberIndex: number) => void;
 }
 
 const TripContext = createContext<TripContextType | undefined>(undefined);
@@ -707,6 +707,15 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const { user } = useAuth();
 
+  // Clear all state on logout (prevent data leak between users)
+  useEffect(() => {
+    if (!user) {
+      setActiveTrip(null);
+      setSupabaseTrips([]);
+      setProposedActivities([]);
+    }
+  }, [user]);
+
   const proposeActivity = useCallback((activity: Omit<ProposedActivity, "status">) => {
     setProposedActivities((prev) => {
       if (prev.some((a) => a.id === activity.id)) return prev;
@@ -728,11 +737,11 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
   const approvedActivities = proposedActivities.filter((a) => a.status === "approved");
 
-  const addMember = useCallback((tripId: number, name: string, color: string) => {
+  const addMember = useCallback((tripId: number | string, name: string, color: string) => {
     const initial = name.charAt(0).toUpperCase();
     const updateTrips = (prev: Trip[]) =>
       prev.map((t) =>
-        t.id === tripId
+        String(t.id) === String(tripId)
           ? {
               ...t,
               memberInitials: [...t.memberInitials, initial],
@@ -757,10 +766,10 @@ export function TripProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const removeMember = useCallback((tripId: number, memberIndex: number) => {
+  const removeMember = useCallback((tripId: number | string, memberIndex: number) => {
     const updateTrips = (prev: Trip[]) =>
       prev.map((t) =>
-        t.id === tripId
+        String(t.id) === String(tripId)
           ? {
               ...t,
               memberInitials: t.memberInitials.filter((_, i) => i !== memberIndex),

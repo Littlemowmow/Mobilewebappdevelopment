@@ -1,4 +1,4 @@
-import { Plane, Home, Landmark, UtensilsCrossed, ChevronRight, Clock, ArrowLeft, Camera, Utensils, Music, ShoppingBag, Coffee, X } from "lucide-react";
+import { Plane, Home, Landmark, ChevronRight, Clock, ArrowLeft, Camera, Utensils, Music, ShoppingBag, Coffee, X } from "lucide-react";
 import { useTrip } from "../context/TripContext";
 import { Link } from "react-router";
 import { useState } from "react";

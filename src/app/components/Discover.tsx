@@ -3,7 +3,7 @@
 import { Filter, MapPin, Star, X, Heart, Plane, ChevronUp } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, useMotionValue, useTransform, AnimatePresence, animate, type PanInfo } from "motion/react";
+import { motion, useMotionValue, AnimatePresence, type PanInfo } from "motion/react";
 import { useTrip } from "../context/TripContext";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -103,17 +103,17 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
           : leisure === "park" || leisure === "garden" ? "Nature"
           : "SideQuest";
 
-        // Skip blocked content (haram: bars, pubs, alcohol, gambling)
-        const fullCheck = `${name} ${description} ${amenity}`.toLowerCase();
-        const blocked = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "lounge", "hookah", "casino", "gambling", "strip"];
-        if (blocked.some(kw => fullCheck.includes(kw))) continue;
-
         const description = t.description
           || t["description:en"]
           || (historic ? `A historic ${historic} in ${cityName}.` : "")
           || (tourism === "museum" ? `A museum in ${cityName}.` : "")
           || (amenity === "restaurant" ? `A restaurant in ${cityName}.` : "")
           || `A ${cat.toLowerCase()} spot in ${cityName}.`;
+
+        // Skip blocked content (haram: bars, pubs, alcohol, gambling)
+        const fullCheck = `${name} ${description} ${amenity}`.toLowerCase();
+        const blocked = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "lounge", "hookah", "casino", "gambling", "strip"];
+        if (blocked.some(kw => fullCheck.includes(kw))) continue;
 
         results.push({
           id: `osm_${el.id}`,
@@ -196,6 +196,7 @@ interface Place {
   rating: number;
   tags: string[];
   image: string;
+  city?: string;
 }
 
 function formatDuration(minutes: number | null | undefined): string {
