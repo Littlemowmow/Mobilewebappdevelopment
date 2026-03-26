@@ -214,7 +214,7 @@ function mapActivityToPlace(activity: any): Place {
     description: activity.description || "",
     price: formatCostTier(activity.cost_tier),
     duration: formatDuration(activity.duration_minutes),
-    rating: activity.sidequest_score ?? 9.0,
+    rating: activity.sidequest_score ?? 0,
     tags,
     image,
   };
@@ -253,6 +253,7 @@ export function Discover() {
   const isSwipingRef = useRef(false);
   // Key to force-remount the slider draggable, clearing stale drag offset
   const [sliderKey, setSliderKey] = useState(0);
+  const [showDetail, setShowDetail] = useState(false);
 
   // Fetch activities — from Supabase first, fall back to live API for trip cities
   useEffect(() => {
@@ -533,6 +534,7 @@ export function Discover() {
                 place={currentPlace}
                 onSwipe={(dir) => removeCard(dir, intensity)}
                 intensity={intensity}
+                onTap={() => setShowDetail(true)}
                 key={currentPlace.id + "-" + currentIndex}
               />
             </AnimatePresence>
@@ -615,6 +617,83 @@ export function Discover() {
           </motion.div>
         </div>
       </div>
+
+      {/* Activity Detail Modal */}
+      {showDetail && currentPlace && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowDetail(false)}>
+          <div className="absolute inset-0 bg-black/60" />
+          <div
+            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[28px] max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Image */}
+            {currentPlace.image && (currentPlace.image.startsWith("http")) && (
+              <div className="h-48 w-full overflow-hidden rounded-t-[28px]">
+                <img src={currentPlace.image} alt={currentPlace.name} className="w-full h-full object-cover" />
+              </div>
+            )}
+
+            <div className="p-6">
+              {/* Tags */}
+              <div className="flex gap-2 mb-3 flex-wrap">
+                {currentPlace.tags.map((tag) => (
+                  <span key={tag} className="bg-orange-500/10 text-orange-500 px-3 py-1 rounded-full text-xs font-semibold">{tag}</span>
+                ))}
+              </div>
+
+              <h2 className="text-[24px] font-semibold text-zinc-900 dark:text-white mb-2">{currentPlace.name}</h2>
+
+              <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 mb-4">
+                <MapPin className="w-4 h-4" />
+                <span className="text-[15px]">{currentPlace.location}</span>
+              </div>
+
+              <p className="text-zinc-600 dark:text-zinc-400 text-[15px] leading-relaxed mb-5">
+                {currentPlace.description}
+              </p>
+
+              {/* Details */}
+              <div className="flex items-center gap-4 mb-6 pb-5 border-b border-zinc-100 dark:border-zinc-800">
+                {currentPlace.price && (
+                  <div className="bg-zinc-100 dark:bg-zinc-900 px-3 py-2 rounded-xl">
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-white">{currentPlace.price}</span>
+                  </div>
+                )}
+                {currentPlace.duration && (
+                  <div className="bg-zinc-100 dark:bg-zinc-900 px-3 py-2 rounded-xl">
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{currentPlace.duration}</span>
+                  </div>
+                )}
+                {currentPlace.rating > 0 && (
+                  <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 rounded-xl">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">{currentPlace.rating.toFixed(1)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDetail(false)}
+                  className="flex-1 py-3.5 rounded-2xl text-[15px] font-semibold bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all"
+                >
+                  Back to Swiping
+                </button>
+                <button
+                  onClick={() => {
+                    removeCard("right", 0.8);
+                    setShowDetail(false);
+                  }}
+                  className="flex-1 py-3.5 rounded-2xl text-[15px] font-semibold bg-gradient-to-br from-orange-600 to-orange-500 text-white shadow-lg shadow-orange-600/30 transition-all"
+                >
+                  Save Activity
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -623,9 +702,10 @@ interface SwipeCardProps {
   place: Place;
   onSwipe?: (direction: "left" | "right") => void;
   intensity: number;
+  onTap?: () => void;
 }
 
-function SwipeCard({ place, onSwipe, intensity }: SwipeCardProps) {
+function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
   // Determine image src
   const imageSrc = place.image && (place.image.startsWith("http://") || place.image.startsWith("https://"))
     ? place.image
@@ -691,8 +771,8 @@ function SwipeCard({ place, onSwipe, intensity }: SwipeCardProps) {
           </div>
         </div>
 
-        {/* Content */}
-        <div className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white p-6">
+        {/* Content — tappable for details */}
+        <div className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white p-6 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-900 transition-colors" onClick={onTap}>
           <div className="mb-4">
             <h3 className="text-[22px] leading-tight mb-2 font-semibold text-zinc-900 dark:text-white">{place.name}</h3>
 
