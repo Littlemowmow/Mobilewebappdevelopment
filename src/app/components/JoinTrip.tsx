@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
-import { Globe, Loader2 } from "lucide-react";
+import { Globe, Loader2, User } from "lucide-react";
 
 const emojiOptions = ["😎", "🤠", "🥳", "😈", "🦊", "🐸", "🌸", "⚡", "🔥", "💎", "🎯", "🌊", "🍕", "✈️", "🎒", "🗺️", "🌴", "🎭", "🎵", "🏔️"];
 
@@ -85,6 +85,12 @@ export function JoinTrip() {
           arrival_date: arrivalDate || null,
           departure_date: departureDate || null,
           accommodation_mode: accomMode !== "none" ? accomMode : null,
+          accommodation_type: accomType || null,
+          accommodation_address: accomAddress || null,
+          accommodation_checkin: accomCheckin || null,
+          accommodation_checkout: accomCheckout || null,
+          accommodation_cost_per_night: accomCostPerNight ? parseFloat(accomCostPerNight) : null,
+          flight_cost: flightCost ? parseFloat(flightCost) : null,
         },
       });
 
@@ -344,11 +350,11 @@ export function JoinTrip() {
               <button
                 className="w-full flex items-center gap-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/50 rounded-2xl px-5 py-4 text-left transition-all"
               >
-                <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  T
+                <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-white flex-shrink-0">
+                  <User className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[15px] font-semibold text-teal-700 dark:text-teal-300">Same as Trip Creator</div>
+                  <div className="text-[15px] font-semibold text-teal-700 dark:text-teal-300">Same as trip organizer</div>
                   <div className="text-xs text-teal-600/70 dark:text-teal-400/70">You'll share their accommodation details</div>
                 </div>
                 <div className="w-6 h-6 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">

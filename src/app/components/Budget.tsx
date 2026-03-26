@@ -149,10 +149,20 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [reqDescription, setReqDescription] = useState("");
   const [reqAmount, setReqAmount] = useState("");
 
-  // Editable total budget
-  const [totalBudget, setTotalBudget] = useState(budgetData.total);
+  // Editable total budget — prefer trip's stored budget, then context budget
+  const initialBudget = activeTrip?.budget || activeTrip?.metadata?.personal_budget || budgetData.total || 0;
+  const [totalBudget, setTotalBudget] = useState(initialBudget);
   const [editingTotalBudget, setEditingTotalBudget] = useState(false);
-  const [totalBudgetDraft, setTotalBudgetDraft] = useState(String(budgetData.total));
+  const [totalBudgetDraft, setTotalBudgetDraft] = useState(String(initialBudget));
+
+  // Sync totalBudget when activeTrip changes (e.g. first load from Supabase)
+  useEffect(() => {
+    const tripBudget = activeTrip?.budget || activeTrip?.metadata?.personal_budget || 0;
+    if (tripBudget > 0 && totalBudget === 0) {
+      setTotalBudget(tripBudget);
+      setTotalBudgetDraft(String(tripBudget));
+    }
+  }, [activeTrip?.id, activeTrip?.budget, activeTrip?.metadata?.personal_budget]);
 
   // Editable category budgets
   const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>(
@@ -290,9 +300,10 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     );
   }
 
-  const percentSpent = Math.round((totalSpent / totalBudget) * 100);
+  const percentSpent = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
   const remaining = totalBudget - totalSpent;
-  const isOverBudget = percentSpent > 100;
+  const isOverBudget = totalBudget > 0 && percentSpent > 100;
+  const budgetNotSet = totalBudget === 0;
 
   // Filter transactions by city
   const filteredTransactions = selectedCity === "All"
@@ -742,6 +753,13 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                     <X className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
                   </button>
                 </div>
+              ) : budgetNotSet ? (
+                <button
+                  onClick={() => { setTotalBudgetDraft(""); setEditingTotalBudget(true); }}
+                  className="text-[15px] text-orange-500 dark:text-orange-400 font-semibold hover:underline cursor-pointer"
+                >
+                  Set your budget
+                </button>
               ) : (
                 <div className="text-[15px] text-zinc-500 dark:text-zinc-400 font-medium">
                   ${remaining.toLocaleString()} remaining of ${totalBudget.toLocaleString()}
@@ -750,26 +768,30 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             </div>
 
             {/* Progress Bar */}
-            <div className="mb-3">
-              <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    isOverBudget ? "bg-gradient-to-r from-red-500 to-red-600" : "bg-gradient-to-r from-teal-500 to-teal-600"
-                  }`}
-                  style={{ width: `${Math.min(percentSpent, 100)}%` }}
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              {isOverBudget ? (
-                <TrendingUp className="w-4 h-4 text-red-600 dark:text-red-400" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              )}
-              <span className={`text-sm font-bold ${isOverBudget ? "text-red-600 dark:text-red-400" : "text-teal-600 dark:text-teal-400"}`}>
-                {percentSpent}% spent
-              </span>
-            </div>
+            {!budgetNotSet && (
+              <>
+                <div className="mb-3">
+                  <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        isOverBudget ? "bg-gradient-to-r from-red-500 to-red-600" : "bg-gradient-to-r from-teal-500 to-teal-600"
+                      }`}
+                      style={{ width: `${Math.min(percentSpent, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  {isOverBudget ? (
+                    <TrendingUp className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  )}
+                  <span className={`text-sm font-bold ${isOverBudget ? "text-red-600 dark:text-red-400" : "text-teal-600 dark:text-teal-400"}`}>
+                    {percentSpent}% spent
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Spending Breakdown Pie Chart */}
@@ -880,7 +902,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             <div className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[24px] p-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
               <div className="space-y-5">
                 {adjustedDestinations.map((dest) => {
-                  const percent = Math.round((dest.spent / dest.budget) * 100);
+                  const percent = dest.budget > 0 ? Math.round((dest.spent / dest.budget) * 100) : 0;
                   return (
                     <div key={dest.city}>
                       <div className="flex items-center justify-between mb-2.5">
@@ -954,7 +976,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             </div>
             <div className="space-y-3">
               {adjustedCategories.map((cat) => {
-                const percent = Math.round((cat.spent / cat.budget) * 100);
+                const percent = cat.budget > 0 ? Math.round((cat.spent / cat.budget) * 100) : 0;
                 return (
                   <div key={cat.category} className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[20px] p-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
                     <div className="flex items-center justify-between mb-3">

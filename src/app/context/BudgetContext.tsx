@@ -23,9 +23,9 @@ interface BudgetContextType { budgetData: BudgetData }
 
 const BudgetContext = createContext<BudgetContextType | undefined>(undefined);
 
-function createEmptyBudget(cities: { name: string; flag: string }[]): BudgetData {
+function createEmptyBudget(cities: { name: string; flag: string }[], tripBudget: number = 0): BudgetData {
   return {
-    total: 0,
+    total: tripBudget,
     spent: 0,
     categories: [
       { category: "Food & Drinks", spent: 0, budget: 0, iconBg: "bg-orange-50 dark:bg-orange-900/30", emoji: "🍽️", barColor: "bg-orange-500" },
@@ -49,8 +49,8 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
 
   const budgetData = useMemo(() => {
     if (!activeTrip) return createEmptyBudget([]);
-    // All trips start with empty budget matching their cities
-    return createEmptyBudget(activeTrip.cities);
+    const tripBudget = activeTrip.budget || activeTrip.metadata?.personal_budget || 0;
+    return createEmptyBudget(activeTrip.cities, tripBudget);
   }, [activeTrip?.id, activeTrip?.cities]);
 
   return (

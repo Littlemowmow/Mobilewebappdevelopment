@@ -46,6 +46,7 @@ interface Trip {
   memberColors: string[];
   memberInitials: string[];
   memberEmojis?: string[];
+  budget?: number;
   metadata?: {
     transport_mode?: string;
     booking_code?: string;
@@ -109,7 +110,7 @@ function generateInviteCode(): string {
   return code;
 }
 
-function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): Trip {
+function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number, memberCount?: number, savedCount?: number): Trip {
   const rawDestinations = (dbTrip.destinations as string[]) || [];
   const startDate = dbTrip.start_date ? new Date(dbTrip.start_date as string) : new Date();
   const endDate = dbTrip.end_date ? new Date(dbTrip.end_date as string) : new Date();
@@ -165,12 +166,13 @@ function mapSupabaseTripToTrip(dbTrip: Record<string, unknown>, index: number): 
     status: (dbTrip.status as string) === "completed" ? "Completed" : "Active",
     cities,
     days,
-    members: 1,
-    saved: 0,
+    members: memberCount ?? 1,
+    saved: savedCount ?? 0,
     cityCount: cities.length,
     code: (dbTrip.invite_code as string) || "------",
     memberColors: ["bg-orange-500"],
     memberInitials: ["Y"],
+    budget: (dbTrip.budget as number) || 0,
     metadata: (dbTrip.metadata as Trip["metadata"]) || undefined,
   };
 }
@@ -196,19 +198,62 @@ export function TripProvider({ children }: { children: ReactNode }) {
       if (prev.some((a) => a.id === activity.id)) return prev;
       return [...prev, { ...activity, status: "pending" as const }];
     });
-  }, []);
+    // Persist to Supabase
+    if (activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-") && user) {
+      supabase.from("proposed_activities").insert({
+        trip_id: activeTrip.id,
+        user_id: user.id,
+        name: activity.name,
+        location: activity.location,
+        city: activity.city,
+        description: activity.description,
+        tags: activity.tags,
+        price: activity.price,
+        duration: activity.duration,
+        status: "pending",
+      }).then(({ error }) => {
+        if (error) console.warn("Failed to persist proposal:", error.message);
+      });
+    }
+  }, [activeTrip, user]);
 
   const approveActivity = useCallback((id: number) => {
     setProposedActivities((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status: "approved" as const } : a))
     );
-  }, []);
+    // Persist status to Supabase
+    if (activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-")) {
+      const activity = proposedActivities.find((a) => a.id === id);
+      if (activity) {
+        supabase.from("proposed_activities")
+          .update({ status: "approved" })
+          .eq("trip_id", activeTrip.id)
+          .eq("name", activity.name)
+          .then(({ error }) => {
+            if (error) console.warn("Failed to approve in DB:", error.message);
+          });
+      }
+    }
+  }, [activeTrip, proposedActivities]);
 
   const rejectActivity = useCallback((id: number) => {
     setProposedActivities((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status: "rejected" as const } : a))
     );
-  }, []);
+    // Persist status to Supabase
+    if (activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-")) {
+      const activity = proposedActivities.find((a) => a.id === id);
+      if (activity) {
+        supabase.from("proposed_activities")
+          .update({ status: "rejected" })
+          .eq("trip_id", activeTrip.id)
+          .eq("name", activity.name)
+          .then(({ error }) => {
+            if (error) console.warn("Failed to reject in DB:", error.message);
+          });
+      }
+    }
+  }, [activeTrip, proposedActivities]);
 
   const approvedActivities = proposedActivities.filter((a) => a.status === "approved");
 
@@ -239,6 +284,16 @@ export function TripProvider({ children }: { children: ReactNode }) {
       }
       return prev;
     });
+
+    // Persist to Supabase trip_members table
+    if (typeof tripId === "string" && tripId.includes("-")) {
+      supabase.from("trip_members").insert({
+        trip_id: tripId,
+        user_id: null,
+        role: "member",
+        metadata: { name, emoji: emoji || null },
+      }).then(() => {});
+    }
   }, []);
 
   const removeMember = useCallback((tripId: number | string, memberIndex: number) => {
@@ -314,7 +369,61 @@ export function TripProvider({ children }: { children: ReactNode }) {
     }
 
     if (!ownedError && allTrips.length > 0) {
-      setSupabaseTrips(allTrips.map((t, i) => mapSupabaseTripToTrip(t, i)));
+      const tripIds = allTrips.map(t => t.id);
+
+      // Fetch actual member counts from trip_members
+      const { data: memberCountRows } = await supabase
+        .from("trip_members")
+        .select("trip_id")
+        .in("trip_id", tripIds);
+
+      const memberCountMap: Record<string, number> = {};
+      if (memberCountRows) {
+        for (const row of memberCountRows) {
+          memberCountMap[row.trip_id] = (memberCountMap[row.trip_id] || 0) + 1;
+        }
+      }
+
+      // Fetch saved activity counts per trip's cities
+      const allCities: string[] = [];
+      for (const t of allTrips) {
+        const dests = (t.destinations as string[]) || [];
+        for (const d of dests) {
+          const cityName = d.includes(":") ? d.split(":").slice(0, -1).join(":") : d;
+          allCities.push(cityName.trim().toLowerCase());
+        }
+      }
+      const savedCountMap: Record<string, number> = {};
+      if (allCities.length > 0) {
+        const { data: savedRows } = await supabase
+          .from("saved_activities")
+          .select("city")
+          .in("city", [...new Set(allCities)]);
+
+        const citySavedCount: Record<string, number> = {};
+        if (savedRows) {
+          for (const row of savedRows) {
+            const c = (row.city as string).toLowerCase();
+            citySavedCount[c] = (citySavedCount[c] || 0) + 1;
+          }
+        }
+        for (const t of allTrips) {
+          let count = 0;
+          const dests = (t.destinations as string[]) || [];
+          for (const d of dests) {
+            const cityName = (d.includes(":") ? d.split(":").slice(0, -1).join(":") : d).trim().toLowerCase();
+            count += citySavedCount[cityName] || 0;
+          }
+          savedCountMap[t.id] = count;
+        }
+      }
+
+      setSupabaseTrips(allTrips.map((t, i) => mapSupabaseTripToTrip(
+        t,
+        i,
+        (memberCountMap[t.id] || 0) + 1, // +1 for owner
+        savedCountMap[t.id] || 0,
+      )));
     } else if (ownedError) {
       console.error("Failed to load trips:", ownedError);
     }
@@ -324,6 +433,30 @@ export function TripProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadTrips();
   }, [loadTrips]);
+
+  // Load proposed activities from Supabase when activeTrip changes
+  useEffect(() => {
+    if (!activeTrip || typeof activeTrip.id !== "string") return;
+    supabase.from("proposed_activities")
+      .select("*")
+      .eq("trip_id", activeTrip.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) {
+          setProposedActivities(data.map((a: Record<string, unknown>) => ({
+            id: a.id ? parseInt((a.id as string).slice(0, 8), 16) : Date.now(),
+            name: a.name as string,
+            location: (a.location as string) || "",
+            city: (a.city as string) || "",
+            description: (a.description as string) || "",
+            tags: (a.tags as string[]) || [],
+            price: (a.price as string) || "",
+            duration: (a.duration as string) || "",
+            status: ((a.status as string) || "pending") as "pending" | "approved" | "rejected",
+          })));
+        }
+      });
+  }, [activeTrip?.id]);
 
   // Real-time subscription for trip updates
   useEffect(() => {

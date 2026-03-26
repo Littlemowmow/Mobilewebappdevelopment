@@ -1,4 +1,4 @@
-import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send, Copy, Share2, Loader2, Plane, Train, Car, Bus, Ship } from "lucide-react";
+import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send, Copy, Share2, Loader2 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
 import { useState, useEffect } from "react";
@@ -29,6 +29,8 @@ export function TripDetail() {
   const [newMemberColor, setNewMemberColor] = useState(MEMBER_COLOR_OPTIONS[0].value);
   const [codeCopied, setCodeCopied] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<string>("");
 
   const trip = trips.find(t => String(t.id) === String(tripId));
   const isSolo = trip ? trip.members <= 1 : false;
@@ -83,9 +85,8 @@ export function TripDetail() {
           <button
             onClick={() => {
               const next = trip.status === "Active" ? "Completed" : "Active";
-              if (confirm(`Change trip status to ${next}?`)) {
-                updateTripStatus(trip.id, next);
-              }
+              setPendingStatus(next);
+              setShowStatusConfirm(true);
             }}
             className="bg-white text-orange-600 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-lg inline-block hover:bg-orange-50 transition-colors"
           >
@@ -225,6 +226,39 @@ export function TripDetail() {
         {activeTab === "budget" && <BudgetTab />}
         {activeTab === "votes" && !isSolo && <VotesTab />}
       </div>
+
+      {/* Status Confirm Modal */}
+      {showStatusConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setShowStatusConfirm(false)}
+          />
+          <div className="relative w-[90%] max-w-sm bg-white dark:bg-zinc-900 rounded-[24px] p-6 shadow-2xl">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">Change Status</h2>
+            <p className="text-[15px] text-zinc-600 dark:text-zinc-400 mb-6">
+              Change trip status to <span className="font-semibold text-orange-500">{pendingStatus}</span>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowStatusConfirm(false)}
+                className="flex-1 py-3 rounded-2xl text-[15px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  updateTripStatus(trip.id, pendingStatus);
+                  setShowStatusConfirm(false);
+                }}
+                className="flex-1 py-3 rounded-2xl text-[15px] font-semibold bg-orange-600 hover:bg-orange-500 text-white transition-colors shadow-lg"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Member Modal */}
       {showAddMember && (

@@ -139,7 +139,7 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
 
         // Skip blocked content (haram: bars, pubs, alcohol, gambling)
         const fullCheck = `${name} ${description} ${amenity}`.toLowerCase();
-        const blocked = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "lounge", "hookah", "casino", "gambling", "strip"];
+        const blocked = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "hookah", "casino", "gambling", "strip"];
         if (blocked.some(kw => fullCheck.includes(kw))) continue;
 
         results.push({
@@ -364,7 +364,7 @@ export function Discover() {
       }
 
       // Filter haram content from Supabase results
-      const BLOCKED = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "lounge", "hookah", "casino", "gambling", "strip", "pork"];
+      const BLOCKED = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "hookah", "casino", "gambling", "strip"];
       const cleanData = (data || []).filter(a => {
         const text = `${a.name || ""} ${a.description || ""} ${a.experience_tag || ""} ${(a.tags || []).join(" ")}`.toLowerCase();
         return !BLOCKED.some(kw => text.includes(kw));

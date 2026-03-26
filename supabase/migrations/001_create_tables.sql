@@ -99,6 +99,22 @@ CREATE TABLE IF NOT EXISTS trip_required_expenses (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Proposed activities for group voting
+CREATE TABLE IF NOT EXISTS proposed_activities (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  trip_id UUID REFERENCES trips(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  location TEXT,
+  city TEXT,
+  description TEXT,
+  tags TEXT[] DEFAULT '{}',
+  price TEXT,
+  duration TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- User profiles (extends Supabase auth)
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
@@ -119,6 +135,7 @@ ALTER TABLE trip_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedule_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_required_expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE proposed_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- Activities: anyone can read, authenticated can insert
@@ -153,6 +170,11 @@ CREATE POLICY "Authenticated add expenses" ON trip_expenses FOR INSERT WITH CHEC
 CREATE POLICY "Anyone can read required expenses" ON trip_required_expenses FOR SELECT USING (true);
 CREATE POLICY "Authenticated add required expenses" ON trip_required_expenses FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+-- Proposed activities: trip participants can read, authenticated can insert/update
+CREATE POLICY "Anyone can read proposed activities" ON proposed_activities FOR SELECT USING (true);
+CREATE POLICY "Authenticated add proposed activities" ON proposed_activities FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Authenticated update proposed activities" ON proposed_activities FOR UPDATE USING (auth.uid() = user_id);
+
 -- Profiles: users manage their own
 CREATE POLICY "Public profiles" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
@@ -168,6 +190,7 @@ CREATE INDEX IF NOT EXISTS idx_trip_members_trip ON trip_members(trip_id);
 CREATE INDEX IF NOT EXISTS idx_schedule_trip ON schedule_activities(trip_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_trip ON trip_expenses(trip_id);
 CREATE INDEX IF NOT EXISTS idx_required_expenses_trip ON trip_required_expenses(trip_id);
+CREATE INDEX IF NOT EXISTS idx_proposed_activities_trip ON proposed_activities(trip_id);
 
 -- Storage bucket for avatar uploads
 INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true)

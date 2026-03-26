@@ -1,4 +1,4 @@
-import { Settings, Bell, HelpCircle, LogOut, ChevronRight, User, Award, Map, Moon, Sun, BellOff, Check, X, Camera } from "lucide-react";
+import { Settings, Bell, HelpCircle, LogOut, ChevronRight, User, Award, Map, BellOff, Check, X, Camera } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
@@ -22,7 +22,7 @@ export function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const emailPrefix = user?.email ? user.email.split("@")[0] : "";
-  const displayName = profile?.display_name || profile?.name || emailPrefix || "User";
+  const displayName = localDisplayName || profile?.display_name || profile?.name || emailPrefix || "User";
   const displayEmail = profile?.email || user?.email || "—";
 
   // Build initials: first + last initial (e.g. "HM"), fallback to single letter
@@ -100,6 +100,8 @@ export function Profile() {
     setIsEditing(true);
   };
 
+  const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
+
   const handleEditSave = async () => {
     if (!user?.id || !editName.trim()) return;
     setEditSaving(true);
@@ -107,10 +109,9 @@ export function Profile() {
       .from("profiles")
       .update({ name: editName.trim(), display_name: editName.trim() })
       .eq("id", user.id);
+    setLocalDisplayName(editName.trim());
     setEditSaving(false);
     setIsEditing(false);
-    // Reload the page to refresh profile from context
-    window.location.reload();
   };
 
   const handleEditCancel = () => {
@@ -224,26 +225,6 @@ export function Profile() {
 
       {/* Menu Items */}
       <div className="space-y-2 mb-8">
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]"
-        >
-          <div className="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200/50 dark:border-zinc-700">
-            {theme === "dark" ? (
-              <Moon className="w-5 h-5 text-zinc-700 dark:text-zinc-300" strokeWidth={2} fill="currentColor" />
-            ) : (
-              <Sun className="w-5 h-5 text-zinc-700 dark:text-zinc-300" strokeWidth={2} />
-            )}
-          </div>
-          <span className="flex-1 text-left font-medium text-[15px] text-zinc-900 dark:text-white">
-            {theme === "dark" ? "Dark Mode" : "Light Mode"}
-          </span>
-          <div className="bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide border border-orange-100 dark:border-transparent">
-            {theme}
-          </div>
-        </button>
-
         <button onClick={() => setShowSettings(!showSettings)} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
           <div className="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200/50 dark:border-zinc-700">
             <Settings className="w-5 h-5 text-zinc-700 dark:text-zinc-300" strokeWidth={2} />

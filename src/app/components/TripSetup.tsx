@@ -78,8 +78,6 @@ export function TripSetup() {
   const [transportCost, setTransportCost] = useState("");
   const [showTransportFollowUp, setShowTransportFollowUp] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
-  const [flightCost, setFlightCost] = useState("");
-  const [flightNumber, setFlightNumber] = useState("");
   const [hotelCostPerNight, setHotelCostPerNight] = useState("");
   const [showFollowUp, setShowFollowUp] = useState(false);
 
