@@ -18,12 +18,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network-first strategy for API calls, cache-first for static assets
+  // Network-first for navigation requests (HTML routes) — critical for Vercel SPA rewrites
+  // to work correctly on hard reloads and direct URL visits.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Network-first strategy for API/Supabase calls
   if (event.request.url.includes('/rest/') || event.request.url.includes('supabase')) {
     event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
-  } else {
-    event.respondWith(
-      caches.match(event.request).then((cached) => cached || fetch(event.request))
-    );
+    return;
   }
+
+  // Cache-first for static assets (JS, CSS, images, fonts)
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
+  );
 });
