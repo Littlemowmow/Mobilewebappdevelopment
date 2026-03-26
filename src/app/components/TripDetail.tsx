@@ -139,6 +139,12 @@ export function TripDetail() {
                 <span className="text-xs font-semibold text-white">{trip.metadata.booking_code}</span>
               </div>
             )}
+            {(trip.metadata as Record<string, unknown>).trip_vibe && (
+              <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-2 rounded-xl border border-white/30">
+                <span className="text-sm">{(trip.metadata as Record<string, unknown>).trip_vibe === "luxury" ? "✨" : (trip.metadata as Record<string, unknown>).trip_vibe === "budget" ? "💡" : "🎯"}</span>
+                <span className="text-xs font-semibold text-white capitalize">{String((trip.metadata as Record<string, unknown>).trip_vibe)} vibe</span>
+              </div>
+            )}
           </div>
         )}
 

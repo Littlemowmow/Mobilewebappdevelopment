@@ -3,7 +3,8 @@ import { useTrip } from "../context/TripContext";
 import { useBudget } from "../context/BudgetContext";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
 
 interface RequiredExpense {
   category: string;
@@ -59,6 +60,33 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
 
+  // Load persisted expenses from Supabase on mount
+  useEffect(() => {
+    if (!activeTrip || !user) return;
+    supabase.from("trip_expenses")
+      .select("*")
+      .eq("trip_id", String(activeTrip.id))
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) {
+          setLocalExpenses(data.map((e: Record<string, unknown>) => ({
+            id: e.id as number,
+            title: e.title as string,
+            amount: e.amount as number,
+            category: e.category as string,
+            city: e.city as string,
+            paidBy: e.paid_by as string,
+            splitWith: (e.split_with as string[]) || [],
+            oweDirection: (e.owe_direction as LocalExpense["oweDirection"]) || null,
+            oweMembers: (e.owe_members as string[]) || [],
+            date: e.created_at as string,
+            iconBg: CATEGORY_META[e.category as string]?.iconBg || "bg-zinc-50 dark:bg-zinc-900/30",
+            emoji: CATEGORY_META[e.category as string]?.emoji || "📦",
+          })));
+        }
+      });
+  }, [activeTrip?.id, user]);
+
   // Current user's initial for "isYou" checks
   const myInitial = useMemo(() => {
     const name = profile?.display_name || profile?.name || user?.email?.split("@")[0] || "Y";
@@ -87,6 +115,30 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   // Budget Lock / Trip Fund state
   // Required expenses start empty — user adds real costs as they're known
   const [requiredExpenses, setRequiredExpenses] = useState<RequiredExpense[]>([]);
+
+  // Load persisted required expenses from Supabase on mount
+  useEffect(() => {
+    if (!activeTrip || !user) return;
+    supabase.from("trip_required_expenses")
+      .select("*")
+      .eq("trip_id", String(activeTrip.id))
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setRequiredExpenses(data.map((e: Record<string, unknown>) => {
+            const cat = REQUIRED_EXPENSE_CATEGORIES.find(c => c.value === e.category) || { emoji: "📦" };
+            return {
+              category: e.category as string,
+              emoji: cat.emoji,
+              perPerson: e.amount as number,
+              total: (e.amount as number) * MEMBERS.length,
+              description: (e.description as string) || (e.title as string) || "",
+            };
+          }));
+        }
+      });
+  }, [activeTrip?.id, user, MEMBERS.length]);
+
   const totalRequiredPerPerson = requiredExpenses.reduce((sum, e) => sum + e.perPerson, 0);
   const totalRequired = requiredExpenses.reduce((sum, e) => sum + e.total, 0);
 

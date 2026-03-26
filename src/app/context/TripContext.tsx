@@ -75,6 +75,9 @@ interface CreateTripData {
   end_date: string;
   budget?: number;
   currency?: string;
+  trip_vibe?: string;
+  budget_mode?: string;
+  group_size?: number;
 }
 
 interface TripContextType {
@@ -342,6 +345,11 @@ export function TripProvider({ children }: { children: ReactNode }) {
         mode: "planning",
         status: "active",
         invite_code: inviteCode,
+        metadata: {
+          trip_vibe: data.trip_vibe || null,
+          budget_mode: data.budget_mode || null,
+          group_size: data.group_size || null,
+        },
       }).select().single();
 
       if (error) {

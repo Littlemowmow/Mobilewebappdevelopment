@@ -168,6 +168,9 @@ export function NewTrip() {
       end_date: effectiveEnd,
       budget: budget ? parseFloat(budget) : undefined,
       currency: "USD",
+      trip_vibe: tripVibe,
+      budget_mode: budgetMode,
+      group_size: groupSize,
     });
     setSubmitting(false);
     if (!error && tripId) {

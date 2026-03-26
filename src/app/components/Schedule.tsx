@@ -1,7 +1,9 @@
 import { Plane, Home, Landmark, ChevronRight, Clock, ArrowLeft, Camera, Utensils, Music, ShoppingBag, Coffee, X } from "lucide-react";
 import { useTrip } from "../context/TripContext";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../../lib/supabase";
 import { Link } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 
 interface Activity {
@@ -27,6 +29,7 @@ const TYPE_CONFIG: Record<string, { badge: string; badgeColor: string; icon: Luc
 
 export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
   const { activeTrip, setActiveTrip } = useTrip();
+  const { user } = useAuth();
   const [selectedCity, setSelectedCity] = useState(0);
   const [selectedDay, setSelectedDay] = useState(0);
   const [showAddActivity, setShowAddActivity] = useState(false);
@@ -35,15 +38,51 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
 
   // Add activity form state
   const [formTitle, setFormTitle] = useState("");
-  const [formTime, setFormTime] = useState("");
+  const [formTime, setFormTime] = useState("10:00");
   const [formDuration, setFormDuration] = useState("");
   const [formPrice, setFormPrice] = useState("");
   const [formType, setFormType] = useState("");
   const [formNotes, setFormNotes] = useState("");
 
+  // Load persisted activities from Supabase on mount
+  useEffect(() => {
+    if (!activeTrip || !user) return;
+    supabase
+      .from("schedule_activities")
+      .select("*")
+      .eq("trip_id", String(activeTrip.id))
+      .order("time", { ascending: true })
+      .then(({ data }) => {
+        if (data) {
+          // Group loaded activities by city-day key
+          const grouped: Record<string, Activity[]> = {};
+          for (const row of data) {
+            const k = `${row.city ?? 0}-${row.day ?? 0}`;
+            if (!grouped[k]) grouped[k] = [];
+            const config = row.badge ? TYPE_CONFIG[row.badge] : null;
+            grouped[k].push({
+              id: row.id ?? Date.now(),
+              icon: config?.icon ?? Landmark,
+              title: row.name,
+              time: row.time,
+              duration: row.duration || undefined,
+              subtitle: row.notes || undefined,
+              badge: config?.badge,
+              badgeColor: config?.badgeColor,
+              price: row.price ? `$${row.price}` : undefined,
+              iconBg: config?.iconBg ?? "bg-zinc-100 dark:bg-zinc-800",
+              iconColor: config?.iconColor ?? "text-zinc-600 dark:text-zinc-400",
+              dotColor: config?.dotColor ?? "bg-zinc-400",
+            });
+          }
+          setAddedActivities(grouped);
+        }
+      });
+  }, [activeTrip?.id, user]);
+
   const resetForm = () => {
     setFormTitle("");
-    setFormTime("");
+    setFormTime("10:00");
     setFormDuration("");
     setFormPrice("");
     setFormType("");
@@ -63,7 +102,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
       subtitle: formNotes.trim() || undefined,
       badge: config?.badge,
       badgeColor: config?.badgeColor,
-      price: formPrice.trim() ? `€${formPrice.trim()}` : undefined,
+      price: formPrice.trim() ? `$${formPrice.trim()}` : undefined,
       iconBg: config?.iconBg ?? "bg-zinc-100 dark:bg-zinc-800",
       iconColor: config?.iconColor ?? "text-zinc-600 dark:text-zinc-400",
       dotColor: config?.dotColor ?? "bg-zinc-400",
@@ -73,6 +112,29 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
       ...prev,
       [key]: [...(prev[key] || []), newActivity],
     }));
+
+    // Persist to Supabase (fails silently if table doesn't exist yet)
+    if (activeTrip && user) {
+      const row = {
+        trip_id: String(activeTrip.id),
+        user_id: user.id,
+        name: formTitle.trim(),
+        time: formTime.trim(),
+        duration: formDuration.trim() || null,
+        notes: formNotes.trim() || null,
+        badge: formType || null,
+        price: formPrice.trim() || null,
+        city: selectedCity,
+        day: selectedDay,
+      };
+      supabase
+        .from("schedule_activities")
+        .insert(row)
+        .then(({ error }) => {
+          if (error) console.warn("Failed to save activity:", error.message);
+        });
+    }
+
     resetForm();
   };
 
@@ -329,7 +391,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
               <div>
                 <label className="block text-sm font-semibold mb-1.5 text-zinc-700 dark:text-zinc-300">Price (Optional)</label>
                 <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-[15px]">&euro;</span>
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-[15px]">$</span>
                   <input
                     type="text"
                     placeholder="0"
