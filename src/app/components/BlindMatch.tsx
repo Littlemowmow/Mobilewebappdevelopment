@@ -61,7 +61,7 @@ const votingItems = [
 
 export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
   const [selectedTab, setSelectedTab] = useState<"voting" | "decided">("voting");
-  const [members, setMembers] = useState(initialMembers);
+  const [members, setMembers] = useState(FALLBACK_MEMBERS);
   const [itemVotes, setItemVotes] = useState<Record<number, 'up' | 'down' | null>>({});
   const votedCount = members.filter(m => m.status === "Voted").length;
   const waitingCount = members.filter(m => m.status === "Waiting").length;

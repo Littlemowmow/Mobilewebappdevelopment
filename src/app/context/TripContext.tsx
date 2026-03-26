@@ -800,19 +800,38 @@ export function TripProvider({ children }: { children: ReactNode }) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
+
+    // Fetch trips where user is owner
+    const { data: ownedTrips, error: ownedError } = await supabase
       .from("trips")
       .select("*")
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      if (data.length > 0) {
-        setSupabaseTrips(data.map((t, i) => mapSupabaseTripToTrip(t, i)));
+    // Fetch trips where user is a member (joined via invite)
+    const { data: memberRows } = await supabase
+      .from("trip_members")
+      .select("trip_id")
+      .eq("user_id", user.id);
+
+    let allTrips = ownedTrips || [];
+
+    // Fetch joined trips that aren't already in owned trips
+    if (memberRows && memberRows.length > 0) {
+      const ownedIds = new Set(allTrips.map(t => t.id));
+      const joinedIds = memberRows.map(m => m.trip_id).filter(id => !ownedIds.has(id));
+      if (joinedIds.length > 0) {
+        const { data: joinedTrips } = await supabase
+          .from("trips")
+          .select("*")
+          .in("id", joinedIds);
+        if (joinedTrips) allTrips = [...allTrips, ...joinedTrips];
       }
-      // If data is empty, keep existing local trips (don't wipe them)
-      // They may have been created locally and not yet synced
-    } else if (error) {
+    }
+
+    if (!ownedError && allTrips.length > 0) {
+      setSupabaseTrips(allTrips.map((t, i) => mapSupabaseTripToTrip(t, i)));
+    } else if (ownedError) {
       console.error("Failed to load trips:", error);
       // Keep existing trips on error — don't wipe
     }
