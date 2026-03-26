@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown, ArrowLeft, Plus, X, Check, Lock, Unlock, Shield, Pencil } from "lucide-react";
 import { useTrip } from "../context/TripContext";
 import { useBudget } from "../context/BudgetContext";
+import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router";
 import { useState, useMemo } from "react";
 
@@ -36,14 +37,8 @@ interface LocalExpense {
   oweMembers?: string[];
 }
 
-// Fallback members used only when no active trip is available
-const FALLBACK_MEMBERS = ["Helena", "Sara", "Zara", "Alex"];
-const FALLBACK_MEMBER_COLORS: Record<string, string> = {
-  Helena: "bg-orange-500",
-  Sara: "bg-teal-500",
-  Zara: "bg-pink-500",
-  Alex: "bg-blue-500",
-};
+// Default color palette for member avatars
+const DEFAULT_MEMBER_COLORS = ["bg-orange-500", "bg-teal-500", "bg-pink-500", "bg-blue-500", "bg-purple-500", "bg-amber-500"];
 
 const CATEGORY_META: Record<string, { emoji: string; iconBg: string; barColor: string }> = {
   "Food & Drinks": { emoji: "🍽️", iconBg: "bg-orange-50 dark:bg-orange-900/30", barColor: "bg-orange-500" },
@@ -56,6 +51,7 @@ const CATEGORY_META: Record<string, { emoji: string; iconBg: string; barColor: s
 export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const { activeTrip, setActiveTrip } = useTrip();
   const { budgetData } = useBudget();
+  const { user, profile } = useAuth();
   const isSolo = activeTrip ? activeTrip.members <= 1 : false;
   const [selectedCity, setSelectedCity] = useState("All");
   const isSoloInit = activeTrip ? activeTrip.members <= 1 : false;
@@ -63,24 +59,30 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
 
-  // Derive members from active trip context, fall back to defaults
+  // Current user's initial for "isYou" checks
+  const myInitial = useMemo(() => {
+    const name = profile?.display_name || profile?.name || user?.email?.split("@")[0] || "Y";
+    return name.charAt(0).toUpperCase();
+  }, [profile, user]);
+
+  // Derive members from active trip context — no fake fallbacks
   const MEMBERS = useMemo(() => {
     if (activeTrip && activeTrip.memberInitials.length > 0) {
       return activeTrip.memberInitials;
     }
-    return FALLBACK_MEMBERS;
-  }, [activeTrip]);
+    return [myInitial];
+  }, [activeTrip, myInitial]);
 
   const MEMBER_COLORS: Record<string, string> = useMemo(() => {
     if (activeTrip && activeTrip.memberInitials.length > 0) {
       const colors: Record<string, string> = {};
       activeTrip.memberInitials.forEach((initial, i) => {
-        colors[initial] = activeTrip.memberColors[i] || "bg-orange-500";
+        colors[initial] = activeTrip.memberColors[i] || DEFAULT_MEMBER_COLORS[i % DEFAULT_MEMBER_COLORS.length];
       });
       return colors;
     }
-    return FALLBACK_MEMBER_COLORS;
-  }, [activeTrip]);
+    return { [myInitial]: "bg-orange-500" };
+  }, [activeTrip, myInitial]);
 
   // Budget Lock / Trip Fund state
   // Required expenses start empty — user adds real costs as they're known
@@ -248,7 +250,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     setFormTitle("");
     setFormAmount("");
     setFormCategory("Food & Drinks");
-    setFormCity("Barcelona");
+    setFormCity(activeTrip?.cities[0]?.name || "");
     setFormPaidBy(MEMBERS[0]);
     setFormSplitWith([...MEMBERS]);
     setFormOweDirection(null);
@@ -513,7 +515,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
               <div className="space-y-4">
                 {MEMBERS.map((member) => {
                   const isCommitted = memberCommitments[member];
-                  const isYou = member === "Helena";
+                  const isYou = member === myInitial;
                   return (
                     <div key={member} className="flex items-center justify-between">
                       <div className="flex items-center gap-3.5">
@@ -549,7 +551,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
           )}
 
           {/* Your Commitment CTA */}
-          {!memberCommitments["Helena"] ? (
+          {!memberCommitments[MEMBERS[0]] ? (
             <button
               onClick={toggleMyCommitment}
               className="w-full bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-4 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30 flex items-center justify-center gap-2"
