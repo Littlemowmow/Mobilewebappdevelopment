@@ -60,6 +60,26 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
 
   // Cache and return
   activityCache[cityName] = results;
+
+  // Persist to Supabase so they're not lost next session
+  if (results.length > 0) {
+    const rows = results.map(r => ({
+      name: r.name,
+      city: cityName,
+      description: r.description,
+      cost_tier: r.price === "$$" ? 2 : r.price === "$" ? 1 : 0,
+      duration_minutes: r.duration.includes("h") ? parseInt(r.duration) * 60 : parseInt(r.duration) || null,
+      tags: r.tags,
+      image_url: r.image || null,
+      experience_tag: r.tags[0] || "Explore",
+      neighborhood: r.location !== cityName ? r.location : null,
+    }));
+    // Upsert by name+city to avoid duplicates
+    supabase.from("activities").upsert(rows, { onConflict: "name,city", ignoreDuplicates: true }).then(({ error }) => {
+      if (error) console.warn("Failed to persist activities:", error.message);
+    });
+  }
+
   return results;
 }
 
@@ -346,7 +366,7 @@ export function Discover() {
       });
       let activities = cleanData.map(mapActivityToPlace);
 
-      // If Supabase has few results, fetch directly from free APIs (client-side, no serverless)
+      // Always fetch live activities for trip cities (Supabase may be stale/empty)
       // Free swiping = bucket-list destinations, epic adventures, world wonders
       const BUCKET_LIST_CITIES = [
         "Interlaken", "Zermatt", "Queenstown", "Reykjavik", "Cusco",
@@ -357,16 +377,19 @@ export function Discover() {
       ];
       const citiesToFetch = tripCities.length > 0
         ? tripCities
-        : activities.length < 10
-          ? BUCKET_LIST_CITIES.sort(() => Math.random() - 0.5).slice(0, 4)
-          : [];
+        : BUCKET_LIST_CITIES.sort(() => Math.random() - 0.5).slice(0, 4);
 
-      if (activities.length < 10 && citiesToFetch.length > 0) {
+      // Always try live APIs — even if Supabase had some results, fill gaps
+      if (citiesToFetch.length > 0) {
+        const existingNames = new Set(activities.map(a => a.name.toLowerCase()));
         for (const city of citiesToFetch) {
           if (cancelled) break;
           const liveResults = await fetchLiveActivities(city);
-          activities = [...activities, ...liveResults];
-          if (activities.length >= 25) break;
+          // Deduplicate against what Supabase already returned
+          const fresh = liveResults.filter(r => !existingNames.has(r.name.toLowerCase()));
+          fresh.forEach(r => existingNames.add(r.name.toLowerCase()));
+          activities = [...activities, ...fresh];
+          if (activities.length >= 30) break;
         }
       }
 
