@@ -82,6 +82,7 @@ export function NewTrip() {
   const [budgetMode, setBudgetMode] = useState<"per-person" | "total">("per-person");
   const [tripVibe, setTripVibe] = useState<"luxury" | "modest" | "budget">("modest");
   const [submitting, setSubmitting] = useState(false);
+  const [createError, setCreateError] = useState("");
   const { createTrip } = useTrip();
   const navigate = useNavigate();
 
@@ -173,9 +174,13 @@ export function NewTrip() {
       group_size: groupSize,
     });
     setSubmitting(false);
-    if (!error && tripId) {
+    if (error) {
+      setCreateError(error);
+      return;
+    }
+    if (tripId) {
       navigate(`/trips/${tripId}/invite`);
-    } else if (!error) {
+    } else {
       navigate("/trips");
     }
   };
@@ -453,9 +458,16 @@ export function NewTrip() {
         </p>
       </div>
 
+      {/* Error Message */}
+      {createError && (
+        <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl text-center">
+          <p className="text-sm text-red-600 dark:text-red-400 font-medium">{createError}</p>
+        </div>
+      )}
+
       {/* Create Button */}
       <button
-        onClick={handleCreateTrip}
+        onClick={() => { setCreateError(""); handleCreateTrip(); }}
         disabled={submitting || !tripName.trim() || !destinations.some(d => d.trim() !== "") || (!!startDate && !!endDate && endDate <= startDate)}
         className="w-full bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-4 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
       >

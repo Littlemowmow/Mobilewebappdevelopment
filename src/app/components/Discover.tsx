@@ -314,6 +314,14 @@ function truncateDescription(desc: string, max = 80): string {
 export function Discover() {
   const { activeTrip, setActiveTrip, trips, proposeActivity } = useTrip();
   const { user } = useAuth();
+
+  // Clear activity cache on logout to prevent data leak between users
+  useEffect(() => {
+    if (!user) {
+      Object.keys(activityCache).forEach(k => delete activityCache[k]);
+    }
+  }, [user]);
+
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);

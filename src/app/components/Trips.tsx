@@ -264,7 +264,7 @@ export function Trips() {
               className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-[24px] p-5 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all duration-200 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] mb-3 hover:scale-[1.01] active:scale-[0.99]"
             >
               <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50">
-                <span className="text-3xl">{trip.cities[0].flag}</span>
+                <span className="text-3xl">{trip.cities[0]?.flag || "🌍"}</span>
               </div>
               <div className="flex-1 text-left">
                 <h3 className="text-[17px] mb-1 font-semibold text-zinc-900 dark:text-white">{trip.name}</h3>
