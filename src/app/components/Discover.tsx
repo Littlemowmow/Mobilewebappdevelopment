@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, MapPin, Star, X, Heart, Plane } from "lucide-react";
+import { Filter, MapPin, Star, X, Heart, Plane, ChevronUp } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence, animate, type PanInfo } from "motion/react";
@@ -258,6 +258,67 @@ function calcIntensityScore(normalizedDrag: number): number {
   // Full drag -> 8-10
   const t = (abs - 0.85) / 0.15;
   return Math.round(8 + t * 2);
+}
+
+/** Truncate description to max 80 chars for card front */
+function truncateDescription(desc: string, max = 80): string {
+  if (!desc || desc.length <= max) return desc;
+  return desc.slice(0, max).replace(/\s+\S*$/, "") + "...";
+}
+
+/** Map tags to "Best For" audience labels */
+function tagsToBestFor(tags: string[]): string[] {
+  const map: Record<string, string> = {
+    Culture: "Culture lovers",
+    Food: "Foodies",
+    Nature: "Nature lovers",
+    Views: "Photographers",
+    SideQuest: "Adventurers",
+    Entertainment: "Night owls",
+  };
+  const result: string[] = [];
+  for (const tag of tags) {
+    if (map[tag]) result.push(map[tag]);
+  }
+  // Always include at least one
+  if (result.length === 0) result.push("Adventurers");
+  return result;
+}
+
+/** Generate contextual tips based on category/tags */
+function generateTips(tags: string[], duration: string): string[] {
+  const tips: string[] = [];
+  const primaryTag = tags[0]?.toLowerCase() || "";
+
+  if (primaryTag === "culture") {
+    tips.push("Remove shoes before entering temples, dress modestly");
+    tips.push("Check opening hours — some close on Mondays");
+    tips.push("Best visited in the morning for fewer crowds");
+  } else if (primaryTag === "food") {
+    tips.push("Try the local specialties, arrive before noon to avoid crowds");
+    tips.push("Best visited in the afternoon for a leisurely meal");
+    tips.push("Ask locals for their favorite dishes");
+  } else if (primaryTag === "views") {
+    tips.push("Visit at sunrise or sunset for the best photos");
+    tips.push("Bring a wide-angle lens if you have one");
+    tips.push("Best visited in the early morning or golden hour");
+  } else if (primaryTag === "nature") {
+    tips.push("Bring water and comfortable shoes");
+    tips.push("Best visited in the morning when wildlife is active");
+    tips.push("Check the weather forecast before heading out");
+  } else if (primaryTag === "entertainment") {
+    tips.push("Book tickets in advance for popular shows");
+    tips.push("Best visited in the evening for the full experience");
+  } else {
+    tips.push("Go with an open mind — the best discoveries are unexpected");
+    tips.push("Best visited in the afternoon");
+  }
+
+  if (duration) {
+    tips.push(`Allow ${duration} to fully enjoy this spot`);
+  }
+
+  return tips.slice(0, 3);
 }
 
 export function Discover() {
@@ -675,6 +736,47 @@ export function Discover() {
                 {currentPlace.description}
               </p>
 
+              {/* Getting There */}
+              {currentPlace.location && (
+                <div className="mb-5">
+                  <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+                    <span>📍</span> Getting There
+                  </h3>
+                  <p className="text-zinc-600 dark:text-zinc-400 text-[14px]">
+                    {currentPlace.location} — {currentPlace.tags[0] || "Attraction"}
+                  </p>
+                </div>
+              )}
+
+              {/* Best For */}
+              <div className="mb-5">
+                <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+                  <span>✨</span> Best For
+                </h3>
+                <div className="flex gap-2 flex-wrap">
+                  {tagsToBestFor(currentPlace.tags).map((label) => (
+                    <span key={label} className="bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded-full text-xs font-medium">
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tips */}
+              <div className="mb-5">
+                <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+                  <span>💡</span> Tips
+                </h3>
+                <ul className="space-y-1.5">
+                  {generateTips(currentPlace.tags, currentPlace.duration).map((tip, i) => (
+                    <li key={i} className="text-zinc-600 dark:text-zinc-400 text-[14px] leading-relaxed flex items-start gap-2">
+                      <span className="text-zinc-400 dark:text-zinc-500 mt-0.5">•</span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               {/* Details */}
               <div className="flex items-center gap-4 mb-6 pb-5 border-b border-zinc-100 dark:border-zinc-800">
                 {currentPlace.price && (
@@ -713,6 +815,19 @@ export function Discover() {
                   Save Activity
                 </button>
               </div>
+
+              {/* Add to Trip button — only when there's an active trip */}
+              {activeTrip && (
+                <button
+                  onClick={() => {
+                    removeCard("right", 0.8);
+                    setShowDetail(false);
+                  }}
+                  className="w-full mt-3 py-3.5 rounded-2xl text-[15px] font-semibold bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg shadow-orange-600/20 transition-all hover:shadow-xl"
+                >
+                  Save to {activeTrip.name}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -810,8 +925,8 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
               <span className="text-[15px]">{place.location}</span>
             </div>
 
-            <p className="text-zinc-600 dark:text-zinc-400 text-[15px] leading-relaxed">
-              {place.description}
+            <p className="text-zinc-600 dark:text-zinc-400 text-[15px] leading-relaxed line-clamp-2">
+              {truncateDescription(place.description)}
             </p>
           </div>
 
@@ -826,6 +941,12 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
                 <span className="text-[15px] font-semibold text-zinc-900 dark:text-amber-400">{place.rating.toFixed(1)}</span>
               </div>
             )}
+          </div>
+
+          {/* Tap for more indicator */}
+          <div className="flex flex-col items-center pt-2 gap-0.5">
+            <ChevronUp className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+            <span className="text-xs text-zinc-500 dark:text-zinc-500">Tap for more →</span>
           </div>
         </div>
       </div>
