@@ -132,6 +132,15 @@ export function Trips() {
         </div>
       )}
 
+      {/* Empty state — shown only when done loading with no trips at all */}
+      {!loading && trips.length === 0 && (
+        <div className="text-center py-10 mb-5">
+          <div className="text-5xl mb-4">✈️</div>
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">No trips yet</h2>
+          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] mb-6">Create your first trip or join one with a code above.</p>
+        </div>
+      )}
+
       {/* Active Trips */}
       {activeTrips.length > 0 && (
         <div className="mb-5">

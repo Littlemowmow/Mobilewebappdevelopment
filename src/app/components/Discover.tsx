@@ -84,7 +84,7 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
             if (url && !url.includes(".svg")) place.image = url;
           }
         }
-      } catch (err) { console.warn("API fetch failed:", err); }
+      } catch { /* image fetch failed — not critical, card shows without image */ }
     }));
   }
 
