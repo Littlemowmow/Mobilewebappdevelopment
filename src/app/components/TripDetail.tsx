@@ -20,7 +20,7 @@ const EMOJI_OPTIONS = ["😎", "🤠", "🥳", "😈", "🦊", "🐸", "🌸", "
 export function TripDetail() {
   const { tripId } = useParams();
   const navigate = useNavigate();
-  const { trips, activeTrip, setActiveTrip, addMember } = useTrip();
+  const { trips, activeTrip, setActiveTrip, addMember, updateTripStatus } = useTrip();
   const [activeTab, setActiveTab] = useState<"schedule" | "budget" | "votes">("schedule");
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
@@ -80,9 +80,15 @@ export function TripDetail() {
           <p className="text-orange-50 text-[15px] font-medium mb-1">
             {trip.dates} · {trip.duration}
           </p>
-          <span className="bg-white text-orange-600 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-lg inline-block">
-            {trip.status.toUpperCase()}
-          </span>
+          <button
+            onClick={() => {
+              const next = trip.status === "Active" ? "Completed" : "Active";
+              updateTripStatus(trip.id, next);
+            }}
+            className="bg-white text-orange-600 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-lg inline-block hover:bg-orange-50 transition-colors"
+          >
+            {trip.status.toUpperCase()} ▾
+          </button>
         </div>
 
         {/* Stats */}

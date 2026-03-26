@@ -83,6 +83,7 @@ interface TripContextType {
   rejectActivity: (id: number) => void;
   addMember: (tripId: number | string, name: string, color: string) => void;
   removeMember: (tripId: number | string, memberIndex: number) => void;
+  updateTripStatus: (tripId: number | string, status: "Active" | "Completed") => void;
 }
 
 const TripContext = createContext<TripContextType | undefined>(undefined);
@@ -793,6 +794,21 @@ export function TripProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateTripStatus = useCallback((tripId: number | string, status: "Active" | "Completed") => {
+    const updateTrips = (prev: Trip[]) =>
+      prev.map((t) => String(t.id) === String(tripId) ? { ...t, status } : t);
+    setLocalMockTrips(updateTrips);
+    setSupabaseTrips(updateTrips);
+    setActiveTrip((prev) => {
+      if (prev && String(prev.id) === String(tripId)) return { ...prev, status };
+      return prev;
+    });
+    // Also update in Supabase if it's a real trip
+    if (typeof tripId === "string" && tripId.includes("-")) {
+      supabase.from("trips").update({ status: status.toLowerCase() }).eq("id", tripId).then(() => {});
+    }
+  }, []);
+
   const loadTrips = useCallback(async () => {
     if (!user) {
       setSupabaseTrips([]);
@@ -918,7 +934,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     : localMockTrips;
 
   return (
-    <TripContext.Provider value={{ activeTrip, setActiveTrip, trips, loading, createTrip, loadTrips, proposedActivities, approvedActivities, proposeActivity, approveActivity, rejectActivity, addMember, removeMember }}>
+    <TripContext.Provider value={{ activeTrip, setActiveTrip, trips, loading, createTrip, loadTrips, proposedActivities, approvedActivities, proposeActivity, approveActivity, rejectActivity, addMember, removeMember, updateTripStatus }}>
       {children}
     </TripContext.Provider>
   );

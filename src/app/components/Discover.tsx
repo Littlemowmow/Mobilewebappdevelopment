@@ -287,44 +287,9 @@ function tagsToBestFor(tags: string[]): string[] {
   return result;
 }
 
-/** Generate contextual tips based on category/tags */
-function generateTips(tags: string[], duration: string): string[] {
-  const tips: string[] = [];
-  const primaryTag = tags[0]?.toLowerCase() || "";
-
-  if (primaryTag === "culture") {
-    tips.push("Remove shoes before entering temples, dress modestly");
-    tips.push("Check opening hours — some close on Mondays");
-    tips.push("Best visited in the morning for fewer crowds");
-  } else if (primaryTag === "food") {
-    tips.push("Try the local specialties, arrive before noon to avoid crowds");
-    tips.push("Best visited in the afternoon for a leisurely meal");
-    tips.push("Ask locals for their favorite dishes");
-  } else if (primaryTag === "views") {
-    tips.push("Visit at sunrise or sunset for the best photos");
-    tips.push("Bring a wide-angle lens if you have one");
-    tips.push("Best visited in the early morning or golden hour");
-  } else if (primaryTag === "nature") {
-    tips.push("Bring water and comfortable shoes");
-    tips.push("Best visited in the morning when wildlife is active");
-    tips.push("Check the weather forecast before heading out");
-  } else if (primaryTag === "entertainment") {
-    tips.push("Book tickets in advance for popular shows");
-    tips.push("Best visited in the evening for the full experience");
-  } else {
-    tips.push("Go with an open mind — the best discoveries are unexpected");
-    tips.push("Best visited in the afternoon");
-  }
-
-  if (duration) {
-    tips.push(`Allow ${duration} to fully enjoy this spot`);
-  }
-
-  return tips.slice(0, 3);
-}
 
 export function Discover() {
-  const { activeTrip, proposeActivity } = useTrip();
+  const { activeTrip, setActiveTrip, trips, proposeActivity } = useTrip();
   const { user } = useAuth();
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
@@ -338,6 +303,7 @@ export function Discover() {
   // Key to force-remount the slider draggable, clearing stale drag offset
   const [sliderKey, setSliderKey] = useState(0);
   const [showDetail, setShowDetail] = useState(false);
+  const [showTripPicker, setShowTripPicker] = useState(false);
 
   // Fetch activities — from Supabase first, fall back to live API for trip cities
   useEffect(() => {
@@ -548,14 +514,56 @@ export function Discover() {
         </button>
       </div>
 
-      {/* Trip Mode Banner */}
-      {activeTrip && (
-        <button className="w-full bg-orange-500/10 border border-orange-500/30 rounded-2xl px-4 py-3 mb-4 flex items-center gap-2 text-left transition-colors hover:bg-orange-500/15">
-          <Plane className="w-4 h-4 text-orange-500 shrink-0" />
-          <span className="text-[14px] font-medium text-orange-600 dark:text-orange-400">
-            Proposing for {activeTrip.name}
-          </span>
-        </button>
+      {/* Trip Mode Banner / Trip Picker */}
+      {trips.length > 0 && (
+        <div className="relative mb-4">
+          <button
+            onClick={() => setShowTripPicker(!showTripPicker)}
+            className={`w-full rounded-2xl px-4 py-3 flex items-center justify-between text-left transition-colors ${
+              activeTrip
+                ? "bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/15"
+                : "bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Plane className={`w-4 h-4 shrink-0 ${activeTrip ? "text-orange-500" : "text-zinc-500"}`} />
+              <span className={`text-[14px] font-medium ${activeTrip ? "text-orange-600 dark:text-orange-400" : "text-zinc-600 dark:text-zinc-400"}`}>
+                {activeTrip ? `Swiping for ${activeTrip.name}` : "Free swiping — tap to pick a trip"}
+              </span>
+            </div>
+            <span className="text-zinc-400 text-xs">▾</span>
+          </button>
+
+          {showTripPicker && (
+            <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+              {/* Free swipe option */}
+              <button
+                onClick={() => { setActiveTrip(null); setShowTripPicker(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors border-b border-zinc-100 dark:border-zinc-800 ${!activeTrip ? "bg-zinc-50 dark:bg-zinc-900" : ""}`}
+              >
+                <span className="text-lg">🌍</span>
+                <div>
+                  <div className="text-[14px] font-medium text-zinc-900 dark:text-white">Free swiping</div>
+                  <div className="text-xs text-zinc-500">Save to personal wishlist</div>
+                </div>
+              </button>
+              {/* Trip options */}
+              {trips.filter(t => t.status === "Active").map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { setActiveTrip(t); setShowTripPicker(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-b-0 ${activeTrip?.id === t.id ? "bg-orange-50 dark:bg-orange-900/20" : ""}`}
+                >
+                  <span className="text-lg">{t.cities[0]?.flag || "🌍"}</span>
+                  <div>
+                    <div className="text-[14px] font-medium text-zinc-900 dark:text-white">{t.name}</div>
+                    <div className="text-xs text-zinc-500">{t.cities.map(c => c.name).join(" → ")}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* City Pills */}
@@ -718,7 +726,7 @@ export function Discover() {
         <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowDetail(false)}>
           <div className="absolute inset-0 bg-black/60" />
           <div
-            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[28px] max-h-[80vh] overflow-y-auto"
+            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[28px] max-h-[90vh] min-h-[60vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image */}
@@ -773,20 +781,17 @@ export function Discover() {
                 </div>
               </div>
 
-              {/* Tips */}
-              <div className="mb-5">
-                <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span>💡</span> Tips
-                </h3>
-                <ul className="space-y-1.5">
-                  {generateTips(currentPlace.tags, currentPlace.duration).map((tip, i) => (
-                    <li key={i} className="text-zinc-600 dark:text-zinc-400 text-[14px] leading-relaxed flex items-start gap-2">
-                      <span className="text-zinc-400 dark:text-zinc-500 mt-0.5">•</span>
-                      <span>{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* About this place — only show if description is substantial */}
+              {currentPlace.description && currentPlace.description.length > 50 && (
+                <div className="mb-5">
+                  <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+                    <span>📖</span> About this place
+                  </h3>
+                  <p className="text-zinc-600 dark:text-zinc-400 text-[14px] leading-relaxed">
+                    {currentPlace.description}
+                  </p>
+                </div>
+              )}
 
               {/* Details */}
               <div className="flex items-center gap-4 mb-6 pb-5 border-b border-zinc-100 dark:border-zinc-800">
@@ -854,6 +859,15 @@ interface SwipeCardProps {
   onTap?: () => void;
 }
 
+function getNoImageStyle(tags: string[]): { gradient: string; emoji: string } {
+  const primary = tags[0] || "";
+  if (primary === "Culture") return { gradient: "from-indigo-600 to-purple-700", emoji: "🏛️" };
+  if (primary === "Food") return { gradient: "from-orange-600 to-red-600", emoji: "🍜" };
+  if (primary === "Nature") return { gradient: "from-emerald-600 to-teal-700", emoji: "🌿" };
+  if (primary === "Views") return { gradient: "from-sky-500 to-blue-700", emoji: "🌅" };
+  return { gradient: "from-zinc-700 to-zinc-900", emoji: "✨" };
+}
+
 function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
   // Determine image src
   const imageSrc = place.image && (place.image.startsWith("http://") || place.image.startsWith("https://"))
@@ -861,6 +875,8 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
     : place.image
     ? `https://source.unsplash.com/featured/?${place.image}`
     : "";
+
+  const noImageStyle = getNoImageStyle(place.tags);
 
   return (
     <motion.div
@@ -881,10 +897,15 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
     >
       <div className="h-full rounded-[28px] overflow-hidden bg-white dark:bg-zinc-900 shadow-2xl dark:shadow-[0_8px_50px_rgba(0,0,0,0.6)] border border-zinc-200/50 dark:border-zinc-700/40 flex flex-col">
         {/* Image */}
-        <div className="relative flex-1 min-h-0 bg-gradient-to-br from-orange-600 via-rose-500 to-amber-500">
+        <div className={`relative flex-1 min-h-0 bg-gradient-to-br ${!imageSrc ? noImageStyle.gradient : "from-orange-600 via-rose-500 to-amber-500"}`}>
           {!imageSrc && (
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-rose-500 to-purple-600">
-              <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(255,255,255,0.15) 0%, transparent 50%)'}} />
+            <div className={`absolute inset-0 bg-gradient-to-br ${noImageStyle.gradient} flex items-center justify-center`}>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                <span className="text-[120px] opacity-20">{noImageStyle.emoji}</span>
+              </div>
+              <div className="relative z-10 text-center px-8">
+                <h2 className="text-white text-[28px] font-bold leading-tight drop-shadow-lg">{place.name}</h2>
+              </div>
             </div>
           )}
           {imageSrc && (

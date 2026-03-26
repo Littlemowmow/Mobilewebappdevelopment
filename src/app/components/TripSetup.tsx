@@ -5,6 +5,8 @@ import { Plane, Home, DollarSign, ArrowRight, Check, X, HelpCircle } from "lucid
 
 type Answer = "yes" | "no" | "not-sure";
 
+type TransportMode = "flying" | "train" | "driving" | "bus" | "boat" | "not-decided";
+
 interface Question {
   id: string;
   icon: typeof Plane;
@@ -18,18 +20,23 @@ interface Question {
   };
 }
 
+const TRANSPORT_OPTIONS: { key: TransportMode; emoji: string; label: string }[] = [
+  { key: "flying", emoji: "\u2708\uFE0F", label: "Flying" },
+  { key: "train", emoji: "\uD83D\uDE86", label: "Train" },
+  { key: "driving", emoji: "\uD83D\uDE97", label: "Driving" },
+  { key: "bus", emoji: "\uD83D\uDE8C", label: "Bus" },
+  { key: "boat", emoji: "\uD83D\uDEA2", label: "Boat/Ferry" },
+  { key: "not-decided", emoji: "\uD83E\uDD37", label: "Not decided yet" },
+];
+
 const QUESTIONS: Question[] = [
   {
-    id: "flights",
+    id: "transport",
     icon: Plane,
     iconBg: "bg-teal-50 dark:bg-teal-900/30",
     iconColor: "text-teal-600 dark:text-teal-400",
-    title: "Are flights booked?",
-    subtitle: "Or still looking for the best deals",
-    followUp: {
-      yes: "Each member will enter their own flight details when they join.",
-      no: "No worries — each member can add flights later.",
-    },
+    title: "How are you getting there?",
+    subtitle: "Your mode of transport",
   },
   {
     id: "hotels",
@@ -48,11 +55,11 @@ const QUESTIONS: Question[] = [
     icon: DollarSign,
     iconBg: "bg-orange-50 dark:bg-orange-900/30",
     iconColor: "text-orange-600 dark:text-orange-400",
-    title: "Personal spending budget?",
-    subtitle: "For food, activities, and getting around — not flights or hotels",
+    title: "Spending money?",
+    subtitle: "For personal extras \u2014 gifts, shopping, souvenirs. Not for the trip itself.",
     followUp: {
-      yes: "We'll track your spending and let you know when you're close.",
-      no: "No worries — we'll estimate one based on your trip vibe and activities.",
+      yes: "How much are you setting aside for personal spending?",
+      no: "No worries \u2014 we'll estimate one based on your trip vibe and activities.",
     },
   },
 ];
@@ -65,6 +72,10 @@ export function TripSetup() {
 
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [transportMode, setTransportMode] = useState<TransportMode | null>(null);
+  const [bookingCode, setBookingCode] = useState("");
+  const [transportCost, setTransportCost] = useState("");
+  const [showTransportFollowUp, setShowTransportFollowUp] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
   const [flightCost, setFlightCost] = useState("");
   const [flightNumber, setFlightNumber] = useState("");
@@ -88,15 +99,31 @@ export function TripSetup() {
     setShowFollowUp(true);
   };
 
+  const handleTransportSelect = (mode: TransportMode) => {
+    setTransportMode(mode);
+    if (mode === "not-decided") {
+      // Skip follow-up, go straight to next button
+      setShowTransportFollowUp(false);
+      setShowFollowUp(true);
+    } else {
+      setShowTransportFollowUp(true);
+      setShowFollowUp(true);
+    }
+  };
+
   const handleNext = () => {
     setShowFollowUp(false);
+    setShowTransportFollowUp(false);
     if (isLast) {
-      // Done — go to trip detail
       navigate(`/trips/${tripId}`);
     } else {
       setCurrentQ(prev => prev + 1);
     }
   };
+
+  const isTransportQuestion = question.id === "transport";
+  // For transport question, show Next button when a mode is selected
+  const showNextButton = isTransportQuestion ? transportMode !== null : showFollowUp;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black px-5 py-6 max-w-md mx-auto flex flex-col">
@@ -135,6 +162,65 @@ export function TripSetup() {
           {question.subtitle}
         </p>
 
+        {/* Transport Mode Selector */}
+        {isTransportQuestion && !showNextButton && (
+          <div className="grid grid-cols-2 gap-3">
+            {TRANSPORT_OPTIONS.map((option) => (
+              <button
+                key={option.key}
+                onClick={() => handleTransportSelect(option.key)}
+                className={`bg-white dark:bg-zinc-950 border rounded-[20px] p-4 flex items-center gap-3 transition-all ${
+                  transportMode === option.key
+                    ? "border-orange-500 ring-1 ring-orange-500"
+                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                }`}
+              >
+                <span className="text-xl">{option.emoji}</span>
+                <span className="text-[15px] font-semibold text-zinc-900 dark:text-white">{option.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Transport follow-up: booking code & cost */}
+        {isTransportQuestion && showTransportFollowUp && transportMode && transportMode !== "not-decided" && (
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1.5 text-center">Got a booking code?</label>
+              <input
+                type="text"
+                value={bookingCode}
+                onChange={(e) => setBookingCode(e.target.value)}
+                placeholder="Flight number / train ticket / confirmation code"
+                className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1.5 text-center">How much did it cost?</label>
+              <div className="relative max-w-[220px] mx-auto">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-lg font-medium">$</span>
+                <input
+                  type="number"
+                  value={transportCost}
+                  onChange={(e) => setTransportCost(e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-9 pr-4 py-4 text-center text-2xl font-bold text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-1.5">per person</p>
+            </div>
+          </div>
+        )}
+
+        {/* Transport "not decided" message */}
+        {isTransportQuestion && transportMode === "not-decided" && showFollowUp && (
+          <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-3 mb-6 text-center">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+              No problem — you can always update this later.
+            </p>
+          </div>
+        )}
+
         {/* Hotel cost per night input */}
         {question.id === "hotels" && currentAnswer === "yes" && showFollowUp && (
           <div className="mb-6">
@@ -170,12 +256,12 @@ export function TripSetup() {
                 className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-9 pr-4 py-4 text-center text-2xl font-bold text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
-            <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-2">your personal spending (excludes flights & hotels)</p>
+            <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-2">How much are you setting aside for personal spending?</p>
           </div>
         )}
 
-        {/* Follow-up message */}
-        {showFollowUp && currentAnswer && currentAnswer !== "not-sure" && question.followUp && (
+        {/* Follow-up message (for non-transport questions) */}
+        {!isTransportQuestion && showFollowUp && currentAnswer && currentAnswer !== "not-sure" && question.followUp && (
           <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl px-5 py-3 mb-6 text-center">
             <p className="text-sm text-orange-500 font-medium">
               {question.followUp[currentAnswer]}
@@ -183,7 +269,7 @@ export function TripSetup() {
           </div>
         )}
 
-        {showFollowUp && currentAnswer === "not-sure" && (
+        {!isTransportQuestion && showFollowUp && currentAnswer === "not-sure" && (
           <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-3 mb-6 text-center">
             <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
               No problem — you can always update this later.
@@ -191,8 +277,8 @@ export function TripSetup() {
           </div>
         )}
 
-        {/* Answer Buttons */}
-        {!showFollowUp ? (
+        {/* Answer Buttons (for non-transport questions) / Next button */}
+        {!isTransportQuestion && !showFollowUp ? (
           <div className="space-y-3">
             <button
               onClick={() => handleAnswer("yes")}
@@ -232,7 +318,7 @@ export function TripSetup() {
               <span className="text-[15px] font-semibold text-zinc-900 dark:text-white">Not sure yet</span>
             </button>
           </div>
-        ) : (
+        ) : showNextButton ? (
           <button
             onClick={handleNext}
             className="w-full bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-4 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30 flex items-center justify-center gap-2"
@@ -240,7 +326,7 @@ export function TripSetup() {
             {isLast ? "Start Planning" : "Next"}
             <ArrowRight className="w-5 h-5" />
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Skip */}

@@ -79,6 +79,7 @@ export function NewTrip() {
   const [daysPerCity, setDaysPerCity] = useState<number[]>([2]);
   const [budget, setBudget] = useState("");
   const [groupSize, setGroupSize] = useState(1);
+  const [budgetMode, setBudgetMode] = useState<"per-person" | "total">("per-person");
   const [tripVibe, setTripVibe] = useState<"luxury" | "modest" | "budget">("modest");
   const [submitting, setSubmitting] = useState(false);
   const { createTrip } = useTrip();
@@ -338,6 +339,26 @@ export function NewTrip() {
       {/* Budget */}
       <div className="mb-8">
         <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Budget (Optional)</label>
+        {/* Per Person / Total toggle */}
+        <div className="flex gap-2 mb-3">
+          {([
+            { key: "per-person" as const, label: "Per Person" },
+            { key: "total" as const, label: "Total" },
+          ]).map((mode) => (
+            <button
+              key={mode.key}
+              type="button"
+              onClick={() => setBudgetMode(mode.key)}
+              className={`flex-1 py-2.5 rounded-2xl text-[14px] font-semibold transition-all ${
+                budgetMode === mode.key
+                  ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md"
+                  : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800"
+              }`}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
         <div className="relative">
           <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-[15px]">$</span>
           <input
@@ -348,6 +369,11 @@ export function NewTrip() {
             className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-10 pr-5 py-4 text-[15px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none"
           />
         </div>
+        {budgetMode === "total" && groupSize > 1 && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 ml-1">
+            Will be split equally among {groupSize} people
+          </p>
+        )}
       </div>
 
       {/* Group Size */}
