@@ -64,7 +64,7 @@ export function Root() {
                   }`}
                   strokeWidth={isActive ? 2.5 : 1.8}
                 />
-                <span className={`text-[11px] font-semibold transition-all duration-200 relative z-10 truncate max-w-[70px] ${
+                <span className={`text-[11px] font-semibold transition-all duration-200 relative z-10 truncate max-w-[80px] text-center block ${
                   isActive ? 'text-orange-500' : 'text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-300'
                 }`}>
                   {item.label}

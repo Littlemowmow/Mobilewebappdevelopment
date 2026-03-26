@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router"
+import { useNavigate, Link } from "react-router"
 import { useAuth } from "../context/AuthContext"
 import { supabase } from "../../lib/supabase"
 import { Globe, Eye, EyeOff } from "lucide-react"
@@ -199,9 +199,9 @@ export function Login() {
         {isSignUp && (
           <p className="text-center text-zinc-400 dark:text-zinc-500 text-xs mt-6 leading-relaxed">
             By signing up you agree to our{" "}
-            <a href="#" className="text-orange-500 hover:underline">Terms of Service</a>
+            <Link to="/terms" className="text-orange-500 hover:underline">Terms of Service</Link>
             {" "}and{" "}
-            <a href="#" className="text-orange-500 hover:underline">Privacy Policy</a>
+            <Link to="/privacy" className="text-orange-500 hover:underline">Privacy Policy</Link>
           </p>
         )}
 

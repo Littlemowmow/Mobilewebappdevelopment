@@ -89,16 +89,17 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
           </div>
         )}
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-950 dark:to-purple-900 rounded-[28px] flex items-center justify-center mb-6 border-2 border-purple-200 dark:border-purple-800/50 shadow-xl">
-            <Compass className="w-10 h-10 text-purple-500 dark:text-purple-400" />
+          <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-950 dark:to-purple-900 rounded-[28px] flex items-center justify-center mb-6 border-2 border-purple-200 dark:border-purple-800/50 shadow-xl animate-bounce" style={{ animationDuration: '2s' }}>
+            <Compass className="w-12 h-12 text-purple-500 dark:text-purple-400" />
           </div>
-          <h2 className="text-[22px] font-semibold text-zinc-900 dark:text-white mb-3">No activities to vote on</h2>
-          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] leading-relaxed mb-6">
-            Swipe right on activities in <span className="font-semibold text-orange-500">Discover</span> to propose them for your group. They'll show up here for everyone to vote on.
+          <h2 className="text-[22px] font-semibold text-zinc-900 dark:text-white mb-3">Nothing to vote on yet</h2>
+          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] leading-relaxed mb-2 max-w-[280px]">
+            Swipe right on activities in <span className="font-semibold text-orange-500">Discover</span> to propose them for your group.
           </p>
+          <p className="text-zinc-400 dark:text-zinc-500 text-sm mb-8">They'll show up here for everyone to vote on.</p>
           <Link
             to="/"
-            className="px-6 py-3 bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-2xl text-[15px] font-semibold shadow-lg shadow-orange-600/30 hover:shadow-xl transition-all"
+            className="px-6 py-3 bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-2xl text-[15px] font-semibold shadow-lg shadow-orange-600/30 hover:shadow-xl hover:scale-[1.03] active:scale-[0.98] transition-all"
           >
             Go to Discover
           </Link>

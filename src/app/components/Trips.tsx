@@ -5,18 +5,40 @@ import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { useEffect, useState } from "react";
 
+function TripCardSkeleton() {
+  return (
+    <div className="w-full rounded-[28px] overflow-hidden shadow-xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] border border-zinc-200/50 dark:border-zinc-700/30 mb-5 animate-pulse">
+      <div className="bg-gradient-to-br from-zinc-300 to-zinc-200 dark:from-zinc-700 dark:to-zinc-800 p-6 h-[100px]" />
+      <div className="bg-white dark:bg-zinc-900 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="h-10 w-16 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
+          <div className="h-4 w-4 bg-zinc-200 dark:bg-zinc-800 rounded" />
+          <div className="h-10 w-16 bg-zinc-200 dark:bg-zinc-800 rounded-2xl" />
+        </div>
+        <div className="flex items-center gap-5">
+          <div className="h-8 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+          <div className="h-8 w-20 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+          <div className="h-8 w-20 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-3">
+            <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800" />
+            <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800" />
+          </div>
+          <div className="h-8 w-28 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Trips() {
-  const { activeTrip, setActiveTrip, trips, loadTrips } = useTrip();
+  const { activeTrip, setActiveTrip, trips, loadTrips, loading } = useTrip();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
-
-  // Clear active trip when viewing the list
-  useEffect(() => {
-    setActiveTrip(null);
-  }, []);
 
   const handleJoinTrip = async () => {
     const code = joinCode.trim().toUpperCase();
@@ -97,6 +119,15 @@ export function Trips() {
       </div>
       {joinError && (
         <p className="text-red-500 text-sm font-medium -mt-3 mb-4 px-1">{joinError}</p>
+      )}
+
+      {/* Loading Skeleton */}
+      {loading && trips.length === 0 && (
+        <div className="mb-5">
+          <TripCardSkeleton />
+          <TripCardSkeleton />
+          <TripCardSkeleton />
+        </div>
       )}
 
       {/* Active Trips */}

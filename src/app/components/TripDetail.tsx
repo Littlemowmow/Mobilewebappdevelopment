@@ -151,14 +151,17 @@ export function TripDetail() {
         {/* Members */}
         <div className="flex items-center gap-3">
           <div className="flex -space-x-3">
-            {trip.memberInitials.map((initial, index) => (
-              <div
-                key={index}
-                className={`w-10 h-10 rounded-full ${trip.memberColors[index]} flex items-center justify-center text-white text-sm font-bold border-[3px] border-white/50 shadow-md`}
-              >
-                {initial}
-              </div>
-            ))}
+            {trip.memberInitials.map((initial, index) => {
+              const emoji = trip.memberEmojis?.[index];
+              return (
+                <div
+                  key={index}
+                  className={`w-10 h-10 rounded-full ${trip.memberColors[index]} flex items-center justify-center text-white text-sm font-bold border-[3px] border-white/50 shadow-md`}
+                >
+                  {emoji || initial}
+                </div>
+              );
+            })}
           </div>
           <button
             onClick={() => setShowAddMember(true)}
@@ -348,7 +351,7 @@ export function TripDetail() {
             <button
               onClick={() => {
                 if (newMemberName.trim()) {
-                  addMember(trip.id, newMemberName.trim(), newMemberColor);
+                  addMember(trip.id, newMemberName.trim(), newMemberColor, newMemberEmoji);
                   setNewMemberName("");
                   setNewMemberPhone("");
                   setNewMemberEmoji("😎");

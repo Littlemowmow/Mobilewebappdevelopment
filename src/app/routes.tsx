@@ -9,11 +9,21 @@ import { Login } from "./components/Login";
 import { InviteMembers } from "./components/InviteMembers";
 import { JoinTrip } from "./components/JoinTrip";
 import { TripSetup } from "./components/TripSetup";
+import { Privacy } from "./components/Privacy";
+import { Terms } from "./components/Terms";
 
 export const router = createBrowserRouter([
   {
     path: "/login",
     Component: Login,
+  },
+  {
+    path: "/privacy",
+    Component: Privacy,
+  },
+  {
+    path: "/terms",
+    Component: Terms,
   },
   {
     path: "/join/:code",

@@ -43,6 +43,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
   const [formPrice, setFormPrice] = useState("");
   const [formType, setFormType] = useState("");
   const [formNotes, setFormNotes] = useState("");
+  const [detailActivity, setDetailActivity] = useState<Activity | null>(null);
 
   // Load persisted activities from Supabase on mount
   useEffect(() => {
@@ -136,6 +137,24 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
     }
 
     resetForm();
+  };
+
+  const handleDeleteActivity = (activityId: number) => {
+    const key = `${selectedCity}-${selectedDay}`;
+    setAddedActivities((prev) => ({
+      ...prev,
+      [key]: (prev[key] || []).filter((a) => a.id !== activityId),
+    }));
+    // Remove from Supabase
+    if (activeTrip && user) {
+      supabase
+        .from("schedule_activities")
+        .delete()
+        .eq("id", activityId)
+        .then(({ error }) => {
+          if (error) console.warn("Failed to delete activity:", error.message);
+        });
+    }
   };
 
   if (!activeTrip) {
@@ -268,9 +287,10 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
       {currentActivities.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-5xl mb-4">🗺️</div>
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No activities yet</h3>
-          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] mb-6 max-w-[250px] mx-auto">
-            Head to Discover to find activities for {currentCity?.name || "this city"}, or add one manually below
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No activities planned for this day</h3>
+          <p className="text-zinc-500 dark:text-zinc-400 text-[15px] mb-6 max-w-[280px] mx-auto">
+            Add one below or swipe in{" "}
+            <Link to="/" className="text-orange-500 font-semibold hover:underline">Discover</Link>.
           </p>
         </div>
       ) : (
@@ -290,7 +310,10 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
               </div>
 
               {/* Card */}
-              <div className="ml-[52px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[20px] p-5 shadow-md hover:shadow-lg transition-shadow border border-zinc-200/50 dark:border-zinc-800">
+              <div
+                className="ml-[52px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[20px] p-5 shadow-md hover:shadow-lg transition-shadow border border-zinc-200/50 dark:border-zinc-800 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-900"
+                onClick={() => setDetailActivity(activity)}
+              >
                 <div className="flex items-start gap-4">
                   <div className={`w-12 h-12 rounded-xl ${activity.iconBg} flex items-center justify-center flex-shrink-0 border border-zinc-100/50 dark:border-zinc-800`}>
                     <Icon className={`w-6 h-6 ${activity.iconColor}`} strokeWidth={2} />
@@ -298,9 +321,22 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <h3 className="font-semibold text-[16px] text-zinc-900 dark:text-zinc-100 leading-tight">{activity.title}</h3>
-                      {activity.price && (
-                        <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex-shrink-0">{activity.price}</span>
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {activity.price && (
+                          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{activity.price}</span>
+                        )}
+                        {extraActivities.some(a => a.id === activity.id) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteActivity(activity.id);
+                            }}
+                            className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 mb-2 flex-wrap">
                       <div className="flex items-center gap-1.5">
@@ -446,6 +482,60 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity Detail Modal */}
+      {detailActivity && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setDetailActivity(null)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-t-[28px] p-6 max-h-[70vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white">{detailActivity.title}</h2>
+              <button onClick={() => setDetailActivity(null)} className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                <X className="w-4 h-4 text-zinc-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                <Clock className="w-4 h-4" />
+                <span className="text-[15px] font-medium">{detailActivity.time}</span>
+                {detailActivity.duration && (
+                  <>
+                    <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                    <span className="text-[15px] font-medium">{detailActivity.duration}</span>
+                  </>
+                )}
+              </div>
+
+              {detailActivity.price && (
+                <div className="text-[15px] font-semibold text-zinc-900 dark:text-white">
+                  Price: {detailActivity.price}
+                </div>
+              )}
+
+              {detailActivity.badge && (
+                <span className={`${detailActivity.badgeColor} text-white px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide shadow-sm inline-block`}>
+                  {detailActivity.badge}
+                </span>
+              )}
+
+              {detailActivity.subtitle && (
+                <p className="text-[15px] text-zinc-600 dark:text-zinc-400 leading-relaxed">{detailActivity.subtitle}</p>
+              )}
+            </div>
+
+            <button
+              onClick={() => setDetailActivity(null)}
+              className="w-full mt-6 py-3.5 rounded-2xl text-[15px] font-semibold bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

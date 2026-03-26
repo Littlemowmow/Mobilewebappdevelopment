@@ -203,7 +203,7 @@ export function NewTrip() {
       </div>
 
       {/* Dates */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-2 gap-3 mb-1">
         <div>
           <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Start Date (optional)</label>
           <input
@@ -219,10 +219,18 @@ export function NewTrip() {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-4 text-[15px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none"
+            className={`w-full bg-white dark:bg-zinc-950 border rounded-2xl px-4 py-4 text-[15px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none ${
+              startDate && endDate && endDate <= startDate
+                ? "border-red-400 dark:border-red-600"
+                : "border-zinc-200 dark:border-zinc-800"
+            }`}
           />
         </div>
       </div>
+      {startDate && endDate && endDate <= startDate && (
+        <p className="text-red-500 text-sm font-medium mb-4 px-1">End date must be after start date</p>
+      )}
+      {!(startDate && endDate && endDate <= startDate) && <div className="mb-5" />}
 
       {/* Destinations */}
       <div className="mb-5">
@@ -448,7 +456,7 @@ export function NewTrip() {
       {/* Create Button */}
       <button
         onClick={handleCreateTrip}
-        disabled={submitting || !tripName.trim() || !destinations.some(d => d.trim() !== "")}
+        disabled={submitting || !tripName.trim() || !destinations.some(d => d.trim() !== "") || (!!startDate && !!endDate && endDate <= startDate)}
         className="w-full bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white py-4 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Creating..." : "Create Trip"}

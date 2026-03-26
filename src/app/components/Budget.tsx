@@ -895,10 +895,17 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
           <div>
             <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Recent Transactions</h3>
             {filteredTransactions.length === 0 ? (
-              <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-8 shadow-md border border-zinc-200/50 dark:border-zinc-800 text-center">
-                <div className="text-4xl mb-3">🧾</div>
-                <h4 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-1">No expenses logged yet</h4>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">Tap + to add your first expense</p>
+              <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-10 shadow-md border border-zinc-200/50 dark:border-zinc-800 text-center">
+                <div className="text-6xl mb-4">💸</div>
+                <h4 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No expenses yet</h4>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-5 max-w-[240px] mx-auto">Track your spending by logging your first expense.</p>
+                <button
+                  onClick={() => setShowAddExpense(true)}
+                  className="inline-flex items-center gap-2 bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-5 py-3 rounded-2xl text-[15px] font-semibold transition-all shadow-lg shadow-orange-600/30"
+                >
+                  <Plus className="w-4 h-4" strokeWidth={2.5} />
+                  Add Expense
+                </button>
               </div>
             ) : (
             <div className="space-y-2">

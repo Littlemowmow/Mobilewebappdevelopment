@@ -115,9 +115,9 @@ export function Profile() {
               </button>
             </div>
           ) : (
-            <h2 className="text-xl mb-1 font-semibold text-zinc-900 dark:text-white">{displayName}</h2>
+            <h2 className="text-xl mb-0.5 font-semibold text-zinc-900 dark:text-white">{displayName}</h2>
           )}
-          <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">{displayEmail}</p>
+          <p className="text-zinc-500 dark:text-zinc-400 text-[13px] font-medium">{displayEmail}</p>
         </div>
         {!isEditing && (
           <button onClick={handleEditStart} className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors border border-zinc-200/50 dark:border-transparent">

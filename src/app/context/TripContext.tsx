@@ -45,6 +45,7 @@ interface Trip {
   code: string;
   memberColors: string[];
   memberInitials: string[];
+  memberEmojis?: string[];
   metadata?: {
     transport_mode?: string;
     booking_code?: string;
@@ -92,7 +93,7 @@ interface TripContextType {
   proposeActivity: (activity: Omit<ProposedActivity, "status">) => void;
   approveActivity: (id: number) => void;
   rejectActivity: (id: number) => void;
-  addMember: (tripId: number | string, name: string, color: string) => void;
+  addMember: (tripId: number | string, name: string, color: string, emoji?: string) => void;
   removeMember: (tripId: number | string, memberIndex: number) => void;
   updateTripStatus: (tripId: number | string, status: "Active" | "Completed") => void;
 }
@@ -211,7 +212,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
   const approvedActivities = proposedActivities.filter((a) => a.status === "approved");
 
-  const addMember = useCallback((tripId: number | string, name: string, color: string) => {
+  const addMember = useCallback((tripId: number | string, name: string, color: string, emoji?: string) => {
     const initial = name.charAt(0).toUpperCase();
     const updateTrips = (prev: Trip[]) =>
       prev.map((t) =>
@@ -220,6 +221,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
               ...t,
               memberInitials: [...t.memberInitials, initial],
               memberColors: [...t.memberColors, color],
+              memberEmojis: [...(t.memberEmojis || []), emoji || ""],
               members: t.members + 1,
             }
           : t
@@ -231,6 +233,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
           ...prev,
           memberInitials: [...prev.memberInitials, initial],
           memberColors: [...prev.memberColors, color],
+          memberEmojis: [...(prev.memberEmojis || []), emoji || ""],
           members: prev.members + 1,
         };
       }
