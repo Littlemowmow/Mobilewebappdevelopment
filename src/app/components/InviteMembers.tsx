@@ -6,7 +6,7 @@ import { Copy, Check, Share2, ArrowRight, Users, MessageCircle, Plus, X } from "
 export function InviteMembers() {
   const { tripId } = useParams();
   const navigate = useNavigate();
-  const { trips } = useTrip();
+  const { trips, addMember } = useTrip();
   const trip = trips.find(t => String(t.id) === String(tripId));
 
   const [copied, setCopied] = useState(false);
@@ -50,8 +50,12 @@ export function InviteMembers() {
   const emojiOptions = ["😎", "🤠", "🥳", "😈", "🦊", "🐸", "🌸", "⚡", "🔥", "💎", "🎯", "🌊", "🍕", "✈️", "🎒", "🗺️", "🌴", "🎭", "🎵", "🏔️"];
 
   const addFriend = () => {
-    if (!friendName.trim()) return;
-    setFriends([...friends, { name: friendName.trim(), emoji: friendEmoji }]);
+    if (!friendName.trim() || !tripId) return;
+    const name = friendName.trim();
+    setFriends([...friends, { name, emoji: friendEmoji }]);
+    // Also add to trip context so they show in TripDetail member list
+    const colors = ["bg-teal-500", "bg-purple-500", "bg-blue-500", "bg-pink-500", "bg-amber-500"];
+    addMember(tripId, name, colors[friends.length % colors.length]);
     setFriendName("");
     setFriendEmoji("😎");
     setShowAddFriend(false);
@@ -117,7 +121,7 @@ export function InviteMembers() {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100">{friend.name}</div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">Invite sent</div>
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400">Added to trip</div>
                 </div>
                 <div className="flex items-center gap-1.5 bg-teal-50 dark:bg-teal-900/30 px-3 py-1.5 rounded-lg border border-teal-100/80 dark:border-transparent">
                   <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" strokeWidth={3} />

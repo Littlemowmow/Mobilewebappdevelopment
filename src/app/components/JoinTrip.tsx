@@ -74,12 +74,18 @@ export function JoinTrip() {
 
     setTripName(trip.title);
 
-    // Add as member if logged in
+    // Add as member if logged in — save all travel details
     if (user) {
       await supabase.from("trip_members").insert({
         trip_id: trip.id,
         user_id: user.id,
         role: "member",
+        metadata: {
+          flight_number: flightNumber || null,
+          arrival_date: arrivalDate || null,
+          departure_date: departureDate || null,
+          accommodation_mode: accomMode !== "none" ? accomMode : null,
+        },
       });
 
       // Update profile with name and phone if provided

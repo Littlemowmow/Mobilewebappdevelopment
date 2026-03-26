@@ -333,6 +333,26 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     };
 
     setLocalExpenses((prev) => [newExpense, ...prev]);
+
+    // Persist to Supabase
+    if (activeTrip && user) {
+      const row = {
+        trip_id: String(activeTrip.id),
+        user_id: user.id,
+        title: formTitle.trim(),
+        amount,
+        category: formCategory,
+        city: formCity,
+        paid_by: formPaidBy,
+        split_with: formSplitWith.length > 0 ? [...formSplitWith] : [],
+        owe_direction: formOweDirection || null,
+        owe_members: formOweMembers.length > 0 ? [...formOweMembers] : [],
+      };
+      supabase.from("trip_expenses").insert(row).then(({ error }) => {
+        if (error) console.warn("Failed to save expense:", error.message);
+      });
+    }
+
     setShowAddExpense(false);
     resetForm();
   }
@@ -535,6 +555,19 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                             total: amount * MEMBERS.length,
                             description: reqDescription.trim(),
                           }]);
+                          // Persist to Supabase
+                          if (activeTrip && user) {
+                            supabase.from("trip_required_expenses").insert({
+                              trip_id: String(activeTrip.id),
+                              user_id: user.id,
+                              title: reqDescription.trim(),
+                              amount,
+                              category: reqCategory,
+                              description: reqDescription.trim(),
+                            }).then(({ error }) => {
+                              if (error) console.warn("Failed to save required expense:", error.message);
+                            });
+                          }
                           setShowAddRequired(false);
                           setReqCategory("Accommodation");
                           setReqDescription("");
