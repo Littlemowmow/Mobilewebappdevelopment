@@ -126,10 +126,10 @@ export function Terms() {
               Terms or is harmful to other users, us, or third parties. You may also
               delete your account at any time by contacting us at{" "}
               <a
-                href="mailto:support@weventr.com"
+                href="mailto:weventrapp@gmail.com"
                 className="text-orange-500 hover:underline"
               >
-                support@weventr.com
+                weventrapp@gmail.com
               </a>
               .
             </p>
@@ -168,10 +168,10 @@ export function Terms() {
             <p>
               If you have questions about these Terms, contact us at{" "}
               <a
-                href="mailto:support@weventr.com"
+                href="mailto:weventrapp@gmail.com"
                 className="text-orange-500 hover:underline"
               >
-                support@weventr.com
+                weventrapp@gmail.com
               </a>
               .
             </p>

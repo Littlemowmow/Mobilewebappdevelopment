@@ -683,12 +683,53 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
       {/* ===== BUDGET VIEW ===== */}
       {activeSubTab === "budget" && (
         <>
-          {/* Welcome state: no budget set and no expenses */}
-          {totalBudget === 0 && localExpenses.length === 0 && budgetData.transactions.length === 0 && (
-            <div className="bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 rounded-[28px] p-8 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800 text-center">
-              <div className="text-5xl mb-4">💰</div>
-              <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">Set your trip budget to get started</h3>
-              <p className="text-zinc-500 dark:text-zinc-400 text-[15px] mb-6">Track spending, split costs, and stay on budget throughout your trip.</p>
+          {/* Loading state */}
+          {loadingExpenses && localExpenses.length === 0 && (
+            <div className="space-y-4 mb-5">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white dark:bg-zinc-950 rounded-[20px] p-6 shadow-md border border-zinc-200/50 dark:border-zinc-800 animate-pulse">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded-lg w-3/4" />
+                      <div className="h-3 bg-zinc-100 dark:bg-zinc-900 rounded-lg w-1/2" />
+                    </div>
+                    <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded-lg w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty state: no expenses at all */}
+          {localExpenses.length === 0 && budgetData.transactions.length === 0 && !loadingExpenses && (
+            <div className="text-center py-12 px-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-950 dark:to-green-900 rounded-[24px] flex items-center justify-center mx-auto mb-5 border-2 border-green-200 dark:border-green-800/50 shadow-xl">
+                <span className="text-3xl">💰</span>
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">No expenses yet</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[14px] mb-6 max-w-[260px] mx-auto">
+                Start tracking your trip spending by adding your first expense.
+              </p>
+              <button
+                onClick={() => setShowAddExpense(true)}
+                className="px-6 py-3 bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-2xl text-[15px] font-semibold shadow-lg shadow-orange-600/30"
+              >
+                Add First Expense
+              </button>
+            </div>
+          )}
+
+          {/* Budget setup prompt when no budget is set */}
+          {budgetNotSet && (localExpenses.length > 0 || budgetData.transactions.length > 0) && !loadingExpenses && (
+            <div className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/30 dark:to-zinc-950 rounded-[28px] p-8 mb-5 shadow-lg border border-orange-200/50 dark:border-orange-800/50 text-center">
+              <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-orange-200 dark:border-orange-800/50">
+                <span className="text-2xl">🎯</span>
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">Set your trip budget</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[14px] mb-5 max-w-[260px] mx-auto">
+                Add a budget to track how much you have left to spend.
+              </p>
               <div className="relative mb-4 max-w-[200px] mx-auto">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-lg font-semibold">$</span>
                 <input
@@ -718,7 +759,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             </div>
           )}
 
-          {/* City Pills */}
+          {/* City Pills — only show when there's data to display */}
+          {(localExpenses.length > 0 || budgetData.transactions.length > 0 || !budgetNotSet) && (
           <div className="flex gap-2 mb-6 overflow-x-auto pb-1 scrollbar-hide">
             <button
               onClick={() => setSelectedCity("All")}
@@ -746,7 +788,11 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
               </button>
             ))}
           </div>
+          )}
 
+          {/* Total Trip Card — only show when budget is set or expenses exist */}
+          {(localExpenses.length > 0 || budgetData.transactions.length > 0 || !budgetNotSet) && (
+          <>
           {/* Total Trip Card */}
           <div className="bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 text-zinc-900 dark:text-white rounded-[28px] p-8 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
             <div className="text-center mb-6">
@@ -1054,8 +1100,11 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
               })}
             </div>
           </div>
+          </>
+          )}
 
-          {/* Recent Transactions */}
+          {/* Recent Transactions — hide heading in empty state since we show dedicated empty state above */}
+          {(localExpenses.length > 0 || budgetData.transactions.length > 0 || !budgetNotSet || loadingExpenses) && (
           <div>
             <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Recent Transactions</h3>
             {loadingExpenses ? (
@@ -1141,6 +1190,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             </div>
             )}
           </div>
+          )}
         </>
       )}
 

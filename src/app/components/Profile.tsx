@@ -245,7 +245,6 @@ export function Profile() {
               </div>
             </button>
             <div className="border-t border-zinc-100 dark:border-zinc-800" />
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">More settings coming soon</p>
           </div>
         )}
 
@@ -264,7 +263,7 @@ export function Profile() {
           </div>
         )}
 
-        <button onClick={() => window.open('mailto:support@weventr.com')} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+        <button onClick={() => window.open('mailto:weventrapp@gmail.com')} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
           <div className="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200/50 dark:border-zinc-700">
             <HelpCircle className="w-5 h-5 text-zinc-700 dark:text-zinc-300" strokeWidth={2} />
           </div>

@@ -1,5 +1,3 @@
-"use client";
-
 import { Filter, MapPin, Star, X, Heart, Plane, ChevronUp } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useState, useEffect, useCallback, useRef } from "react";

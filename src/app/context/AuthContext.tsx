@@ -110,7 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!error && data.user) {
       await supabase.from("profiles").update({ name, display_name: name }).eq("id", data.user.id)
     }
-    if (error) setLoading(false)
+    // If email confirmation is enabled, data.session will be null on success.
+    // Always stop loading so the UI never hangs.
+    if (error || !data.session) setLoading(false)
     return { error: error?.message ?? null }
   }
 

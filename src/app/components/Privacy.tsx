@@ -132,10 +132,10 @@ export function Privacy() {
                 You may request complete deletion of your account and all associated
                 data by contacting us at{" "}
                 <a
-                  href="mailto:privacy@weventr.com"
+                  href="mailto:weventrapp@gmail.com"
                   className="text-orange-500 hover:underline"
                 >
-                  privacy@weventr.com
+                  weventrapp@gmail.com
                 </a>
                 . We will process deletion requests within 30 days.
               </li>
@@ -174,10 +174,10 @@ export function Privacy() {
               If you have questions about this privacy policy or your data, contact
               us at{" "}
               <a
-                href="mailto:privacy@weventr.com"
+                href="mailto:weventrapp@gmail.com"
                 className="text-orange-500 hover:underline"
               >
-                privacy@weventr.com
+                weventrapp@gmail.com
               </a>
               .
             </p>

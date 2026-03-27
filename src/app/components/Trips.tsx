@@ -67,7 +67,7 @@ export function Trips() {
       .insert({ trip_id: trip.id, user_id: user.id, role: "member" });
 
     if (joinErr) {
-      setJoinError(joinErr.message);
+      setJoinError(joinErr.message.includes("duplicate") ? "You're already in this trip!" : joinErr.message);
       setJoining(false);
       return;
     }

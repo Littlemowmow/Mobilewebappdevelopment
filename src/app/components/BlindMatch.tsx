@@ -1,8 +1,6 @@
-"use client";
-
 import { ArrowLeft, Lightbulb, Check, Clock, ThumbsUp, ThumbsDown, Sparkles, Compass } from "lucide-react";
 import { Link } from "react-router";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -18,9 +16,25 @@ const MEMBER_COLORS = [
 
 export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
   const { activeTrip, proposedActivities, approveActivity, rejectActivity } = useTrip();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [selectedTab, setSelectedTab] = useState<"voting" | "decided">("voting");
   const [itemVotes, setItemVotes] = useState<Record<number, 'up' | 'down' | null>>({});
+
+  // Load existing votes from Supabase on mount
+  useEffect(() => {
+    if (!user || !activeTrip) return;
+    supabase.from("blind_match_votes")
+      .select("activity_id, vote")
+      .eq("trip_id", String(activeTrip.id))
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data) {
+          const loaded: Record<number, 'up' | 'down' | null> = {};
+          data.forEach((v: any) => { loaded[v.activity_id] = v.vote; });
+          setItemVotes(loaded);
+        }
+      });
+  }, [activeTrip?.id, user?.id]);
 
   // Build members from trip data + current user
   const members = useMemo(() => {
@@ -31,17 +45,17 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
       { name: currentUserName, initial: currentInitial, color: MEMBER_COLORS[0], isYou: true },
     ];
 
-    // Add trip members from initials
+    // Add trip members by index (not by initial match, which filters out same-initial members)
     if (activeTrip?.memberInitials) {
       activeTrip.memberInitials.forEach((initial, i) => {
-        if (initial !== currentInitial) {
-          memberList.push({
-            name: initial,
-            initial,
-            color: MEMBER_COLORS[(i + 1) % MEMBER_COLORS.length],
-            isYou: false,
-          });
-        }
+        // Skip index 0 since that's the current user's slot
+        if (i === 0) return;
+        memberList.push({
+          name: initial,
+          initial,
+          color: MEMBER_COLORS[i % MEMBER_COLORS.length],
+          isYou: false,
+        });
       });
     }
     return memberList;
@@ -55,7 +69,7 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
 
   const votedCount = youVoted ? 1 : 0;
   const waitingCount = members.length - votedCount;
-  const allVoted = youVoted; // For solo/demo, just show results when you vote
+  const allVoted = youVoted; // MVP: reveal results once you submit your votes
 
   const toggleItemVote = useCallback((itemId: number, direction: 'up' | 'down') => {
     setItemVotes(prev => ({
@@ -64,14 +78,31 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
     }));
   }, []);
 
-  // Submit all votes — approve items with thumbs up, reject with thumbs down
-  const submitVotes = useCallback(() => {
+  // Persist votes to Supabase so they survive refresh
+  const saveVotesToSupabase = useCallback(async () => {
+    if (!user || !activeTrip) return;
+    const votes = Object.entries(itemVotes).map(([id, vote]) => ({
+      trip_id: String(activeTrip.id),
+      activity_id: Number(id),
+      user_id: user.id,
+      vote: vote,
+    }));
+    if (votes.length > 0) {
+      await supabase.from("blind_match_votes").upsert(votes, { onConflict: "trip_id,activity_id,user_id" }).then(({ error }) => {
+        if (error) console.warn("Failed to save votes:", error.message);
+      });
+    }
+  }, [user, activeTrip, itemVotes]);
+
+  // Submit all votes — save to Supabase first, then approve/reject locally
+  const submitVotes = useCallback(async () => {
+    await saveVotesToSupabase();
     Object.entries(itemVotes).forEach(([id, vote]) => {
       const numId = Number(id);
       if (vote === 'up') approveActivity(numId);
       else if (vote === 'down') rejectActivity(numId);
     });
-  }, [itemVotes, approveActivity, rejectActivity]);
+  }, [itemVotes, approveActivity, rejectActivity, saveVotesToSupabase]);
 
   const tripName = activeTrip?.name || "Trip";
   const memberCount = members.length;
@@ -159,10 +190,10 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
           {!allVoted && (
             <div className="text-center mb-8">
               <h2 className="text-[26px] mb-3 font-semibold tracking-tight leading-tight text-zinc-900 dark:text-white">
-                Votes hidden until<br />everyone's in.
+                Vote on activities and<br />submit to see group decisions.
               </h2>
               <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">
-                No awkward "who's actually coming?" energy.
+                Swipe through and lock in your picks.
               </p>
             </div>
           )}
@@ -376,7 +407,7 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
       <div className="mt-8 mb-8 p-5 bg-white dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-[20px] shadow-sm dark:shadow-none">
         <h4 className="text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">How it works</h4>
         <p className="text-sm text-zinc-600 dark:text-zinc-500 leading-relaxed">
-          When someone swipes right on an activity in Discover, it gets proposed here. Everyone votes privately — thumbs up or down. Results only reveal when you submit. No peer pressure.
+          When someone swipes right on an activity in Discover, it gets proposed here. Vote on each activity — thumbs up or down — then submit to see group decisions. Your votes are saved automatically.
         </p>
       </div>
     </div>
