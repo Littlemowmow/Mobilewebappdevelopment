@@ -95,13 +95,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     setLoading(true)
+    // Safety: never let loading hang more than 8s
+    const safetyTimeout = setTimeout(() => setLoading(false), 8000)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setLoading(false)
+    if (error) {
+      clearTimeout(safetyTimeout)
+      setLoading(false)
+    }
     return { error: error?.message ?? null }
   }
 
   const signUp = async (email: string, password: string, name: string) => {
     setLoading(true)
+    const safetyTimeout = setTimeout(() => setLoading(false), 8000)
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
@@ -110,9 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!error && data.user) {
       await supabase.from("profiles").update({ name, display_name: name }).eq("id", data.user.id)
     }
-    // If email confirmation is enabled, data.session will be null on success.
-    // Always stop loading so the UI never hangs.
-    if (error || !data.session) setLoading(false)
+    clearTimeout(safetyTimeout)
+    // Always stop loading — if no session (email confirmation), UI must not hang
+    setLoading(false)
     return { error: error?.message ?? null }
   }
 
