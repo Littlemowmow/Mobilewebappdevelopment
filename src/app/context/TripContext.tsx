@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { type LucideIcon } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "./AuthContext";
+import { trackEvent } from "../../lib/analytics";
 
 interface Activity {
   id: number;
@@ -203,6 +204,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       if (prev.some((a) => a.id === activity.id)) return prev;
       return [...prev, { ...activity, status: "pending" as const }];
     });
+    trackEvent("activity_proposed", { trip_id: activeTrip?.id, activity_name: activity.name });
     // Persist to Supabase
     if (activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-") && user) {
       supabase.from("proposed_activities").insert({
@@ -223,6 +225,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
   }, [activeTrip, user]);
 
   const approveActivity = useCallback((id: number) => {
+    trackEvent("activity_approved", { trip_id: activeTrip?.id, activity_id: id });
     setProposedActivities((prev) => {
       const activity = prev.find((a) => a.id === id);
       // Persist status to Supabase using the fresh value from the updater
@@ -238,6 +241,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
   }, [activeTrip]);
 
   const rejectActivity = useCallback((id: number) => {
+    trackEvent("activity_rejected", { trip_id: activeTrip?.id, activity_id: id });
     setProposedActivities((prev) => {
       const activity = prev.find((a) => a.id === id);
       // Persist status to Supabase using the fresh value from the updater
@@ -255,6 +259,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const approvedActivities = proposedActivities.filter((a) => a.status === "approved");
 
   const addMember = useCallback((tripId: number | string, name: string, color: string, emoji?: string) => {
+    trackEvent("member_added", { trip_id: tripId });
     const initial = name.charAt(0).toUpperCase();
     const updateTrips = (prev: Trip[]) =>
       prev.map((t) =>
@@ -584,6 +589,12 @@ export function TripProvider({ children }: { children: ReactNode }) {
       }
 
       if (created) {
+        trackEvent("trip_created", {
+          trip_id: created.id,
+          destinations_count: filteredDests.length,
+          group_size: data.group_size || 1,
+          vibe: data.trip_vibe || "modest",
+        });
         const newTrip = mapSupabaseTripToTrip(created, 0, undefined, undefined, undefined, user.email?.charAt(0).toUpperCase() || "?");
         setSupabaseTrips(prev => [newTrip, ...prev]);
 

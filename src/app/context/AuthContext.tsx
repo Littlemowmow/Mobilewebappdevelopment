@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { supabase } from "../../lib/supabase"
+import { identifyUser, resetUser, trackEvent } from "../../lib/analytics"
+import { initPurchases } from "../../lib/purchases"
 import type { User } from "@supabase/supabase-js"
 
 interface Profile {
@@ -82,8 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null)
       if (session?.user) {
         loadProfile(session.user.id, session.user.email)
+        // Identify user in PostHog + init RevenueCat
+        identifyUser(session.user.id, {
+          email: session.user.email ?? null,
+          name: session.user.user_metadata?.name ?? null,
+        })
+        initPurchases(session.user.id)
+        trackEvent("session_started")
       } else {
         setProfile(null)
+        resetUser()
       }
     })
 
@@ -120,6 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    trackEvent("user_signed_out")
+    resetUser()
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)

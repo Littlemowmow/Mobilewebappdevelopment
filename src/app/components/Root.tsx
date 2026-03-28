@@ -5,6 +5,7 @@ import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { OnboardingFlow } from "./Onboarding";
+import { trackEvent } from "../../lib/analytics";
 
 export function Root() {
   const location = useLocation();
@@ -37,6 +38,7 @@ export function Root() {
             supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id).then(() => {});
           }
           if (!tripsLoading && trips.length === 0) {
+            trackEvent("onboarding_redirect", { to: "/trips/new" });
             navigate("/trips/new");
           }
         }}

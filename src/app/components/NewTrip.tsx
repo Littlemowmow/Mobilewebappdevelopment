@@ -2,6 +2,7 @@ import { ArrowLeft, Plus, MapPin, Users, Minus, X, Loader2 } from "lucide-react"
 import { Link, useNavigate } from "react-router";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useTrip } from "../context/TripContext";
+import { trackEvent } from "../../lib/analytics";
 
 interface CityResult {
   display: string; // "Tokyo, Japan"
@@ -93,6 +94,10 @@ export function NewTrip() {
   const [createError, setCreateError] = useState("");
   const { createTrip } = useTrip();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    trackEvent("trip_form_started");
+  }, []);
 
   // Calculate total trip days from date range
   const tripDays = useMemo(() => {

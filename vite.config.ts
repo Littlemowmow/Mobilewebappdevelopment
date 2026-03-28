@@ -29,6 +29,8 @@ export default defineConfig({
           motion: ['motion/react'],
           supabase: ['@supabase/supabase-js'],
           icons: ['lucide-react'],
+          analytics: ['posthog-js'],
+          purchases: ['@revenuecat/purchases-js'],
         },
       },
     },

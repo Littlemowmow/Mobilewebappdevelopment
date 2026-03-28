@@ -5,6 +5,7 @@ import { motion, useMotionValue, AnimatePresence, type PanInfo } from "motion/re
 import { useTrip } from "../context/TripContext";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
+import { trackEvent } from "../../lib/analytics";
 
 /** OpenStreetMap Overpass API element */
 interface OSMElement {
@@ -589,6 +590,12 @@ export function Discover() {
 
       const currentPlace = filteredPlaces[currentIndex];
       const score = calcIntensityScore(intensityAtSwipe);
+
+      trackEvent("activity_swiped", {
+        direction,
+        activity_name: currentPlace?.name,
+        city: currentPlace?.city || currentPlace?.location.split(",")[0].trim() || "",
+      });
 
       if (direction === "right" && currentPlace) {
         const city = currentPlace.city || currentPlace.location.split(",")[0].trim() || currentPlace.location;

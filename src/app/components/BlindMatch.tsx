@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { trackEvent } from "../../lib/analytics";
 
 const MEMBER_COLORS = [
   "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -97,6 +98,10 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
   // Submit all votes — save to Supabase first, then approve/reject locally
   const submitVotes = useCallback(async () => {
     await saveVotesToSupabase();
+    trackEvent("votes_submitted", {
+      count: Object.values(itemVotes).filter(v => v !== null && v !== undefined).length,
+      trip_name: activeTrip?.name || "",
+    });
     Object.entries(itemVotes).forEach(([id, vote]) => {
       const numId = Number(id);
       if (vote === 'up') approveActivity(numId);

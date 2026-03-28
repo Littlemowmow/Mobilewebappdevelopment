@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { Compass, Plane, Calendar, ThumbsUp, ThumbsDown, GripVertical, DollarSign } from "lucide-react";
+import { trackEvent } from "../../lib/analytics";
 
 const STEPS = [
   {
@@ -41,10 +42,16 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
   const touchStartXRef = useRef<number | null>(null);
 
+  // Track step views
+  useEffect(() => {
+    trackEvent("onboarding_step_viewed", { step });
+  }, [step]);
+
   const goNext = useCallback(() => {
     if (step < STEPS.length - 1) {
       setStep((s) => s + 1);
     } else {
+      trackEvent("onboarding_completed");
       onComplete();
     }
   }, [step, onComplete]);
@@ -64,7 +71,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       {/* Skip */}
       <div className="flex justify-end px-6 pt-4">
         <button
-          onClick={onComplete}
+          onClick={() => { trackEvent("onboarding_skipped", { step }); onComplete(); }}
           className="text-zinc-500 text-sm font-medium hover:text-zinc-300 transition-colors px-2 py-1"
         >
           Skip
