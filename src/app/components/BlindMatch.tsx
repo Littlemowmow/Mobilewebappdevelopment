@@ -496,17 +496,6 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Why should we go? <span className="text-zinc-600">(optional)</span></label>
-                <textarea
-                  placeholder="Sell it to the group..."
-                  value={proposeDescription}
-                  onChange={(e) => setProposeDescription(e.target.value)}
-                  rows={2}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-[15px] text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-2">Category</label>
                 <div className="flex flex-wrap gap-2">
                   {["Food", "Culture", "Nightlife", "Nature", "Shopping", "Adventure"].map((tag) => (
