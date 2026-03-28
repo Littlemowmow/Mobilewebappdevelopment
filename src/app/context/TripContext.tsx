@@ -81,6 +81,9 @@ interface CreateTripData {
   budget_mode?: string;
   group_size?: number;
   interests?: string[];
+  hotel_total?: number;
+  hotel_nights?: number;
+  flight_cost?: number;
 }
 
 interface TripContextType {
@@ -557,6 +560,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
           budget_mode: data.budget_mode || null,
           group_size: data.group_size || null,
           interests: data.interests || [],
+          hotel_total: data.hotel_total || null,
+          hotel_nights: data.hotel_nights || null,
+          flight_cost: data.flight_cost || null,
         },
       }).select().single();
 
@@ -591,6 +597,43 @@ export function TripProvider({ children }: { children: ReactNode }) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ city: cityName.trim() }),
           }).catch(() => {});
+        }
+
+        // Auto-create required expenses from shared costs
+        const tripId = String(created.id);
+        const requiredExpenses: { trip_id: string; user_id: string; title: string; amount: number; category: string; description: string }[] = [];
+
+        if (data.hotel_total && data.hotel_total > 0) {
+          const groupSz = data.group_size || 1;
+          const perPerson = Math.round(data.hotel_total / groupSz);
+          const nights = data.hotel_nights || 1;
+          requiredExpenses.push({
+            trip_id: tripId,
+            user_id: user.id,
+            title: "Accommodation",
+            amount: perPerson,
+            category: "Accommodation",
+            description: `${nights} night${nights > 1 ? "s" : ""} · $${Math.round(data.hotel_total / nights)}/night · $${data.hotel_total} total`,
+          });
+        }
+
+        if (data.flight_cost && data.flight_cost > 0) {
+          const groupSz = data.group_size || 1;
+          const perPerson = Math.round(data.flight_cost / groupSz);
+          requiredExpenses.push({
+            trip_id: tripId,
+            user_id: user.id,
+            title: "Flights",
+            amount: perPerson,
+            category: "Flights",
+            description: `$${data.flight_cost} total for group`,
+          });
+        }
+
+        if (requiredExpenses.length > 0) {
+          supabase.from("trip_required_expenses").insert(requiredExpenses).then(({ error: reqErr }) => {
+            if (reqErr) console.warn("Failed to save required expenses:", reqErr.message);
+          });
         }
 
         return { error: null, tripId: created.id };

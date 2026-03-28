@@ -83,6 +83,9 @@ export function NewTrip() {
   const [budgetMode, setBudgetMode] = useState<"per-person" | "total">("per-person");
   const [tripVibe, setTripVibe] = useState<"luxury" | "modest" | "budget">("modest");
   const [interests, setInterests] = useState<string[]>([]);
+  const [hotelTotal, setHotelTotal] = useState("");
+  const [hotelNights, setHotelNights] = useState("");
+  const [flightCost, setFlightCost] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createError, setCreateError] = useState("");
   const { createTrip } = useTrip();
@@ -175,6 +178,9 @@ export function NewTrip() {
       budget_mode: budgetMode,
       group_size: groupSize,
       interests,
+      hotel_total: hotelTotal ? parseFloat(hotelTotal) : undefined,
+      hotel_nights: hotelNights ? parseInt(hotelNights) : undefined,
+      flight_cost: flightCost ? parseFloat(flightCost) : undefined,
     });
     setSubmitting(false);
     if (error) {
@@ -466,6 +472,71 @@ export function NewTrip() {
           {tripVibe === "modest" && "Great food, comfortable stays, popular spots"}
           {tripVibe === "budget" && "Street food, hostels, free activities"}
         </p>
+      </div>
+
+      {/* Shared Costs */}
+      <div className="mb-8">
+        <label className="block text-sm font-semibold mb-1 text-zinc-700 dark:text-zinc-300">Shared Costs (Optional)</label>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3 ml-1">These auto-populate in your Budget Lock — split per person</p>
+
+        {/* Hotel */}
+        <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mb-3 shadow-sm dark:shadow-none">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center border border-purple-100/80 dark:border-purple-800/50">
+              <span className="text-lg">🏨</span>
+            </div>
+            <div>
+              <span className="text-[15px] font-medium text-zinc-900 dark:text-white">Hotel / Accommodation</span>
+              {hotelTotal && groupSize > 1 && (
+                <p className="text-xs text-orange-500 font-semibold">${Math.round(parseFloat(hotelTotal) / groupSize)}/person</p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">$</span>
+              <input
+                type="number"
+                placeholder="Total cost"
+                value={hotelTotal}
+                onChange={(e) => setHotelTotal(e.target.value)}
+                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-8 pr-3 py-3 text-[14px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+            <input
+              type="number"
+              placeholder="# nights"
+              value={hotelNights}
+              onChange={(e) => setHotelNights(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-[14px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+        </div>
+
+        {/* Flights */}
+        <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm dark:shadow-none">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center border border-blue-100/80 dark:border-blue-800/50">
+              <span className="text-lg">✈️</span>
+            </div>
+            <div>
+              <span className="text-[15px] font-medium text-zinc-900 dark:text-white">Flights</span>
+              {flightCost && groupSize > 1 && (
+                <p className="text-xs text-orange-500 font-semibold">${Math.round(parseFloat(flightCost) / groupSize)}/person</p>
+              )}
+            </div>
+          </div>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">$</span>
+            <input
+              type="number"
+              placeholder="Total for group (or your cost)"
+              value={flightCost}
+              onChange={(e) => setFlightCost(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-8 pr-3 py-3 text-[14px] text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Trip Interests */}
