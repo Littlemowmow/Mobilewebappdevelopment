@@ -121,27 +121,93 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   // Required expenses start empty — user adds real costs as they're known
   const [requiredExpenses, setRequiredExpenses] = useState<RequiredExpense[]>([]);
 
-  // Load persisted required expenses from Supabase on mount
+  // Load persisted required expenses + auto-populate from member travel costs
   useEffect(() => {
     if (!activeTrip || !user) return;
-    supabase.from("trip_required_expenses")
+
+    // Load manually added required expenses
+    const loadRequired = supabase.from("trip_required_expenses")
       .select("*")
       .eq("trip_id", String(activeTrip.id))
-      .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setRequiredExpenses(data.map((e: Record<string, unknown>) => {
-            const cat = REQUIRED_EXPENSE_CATEGORIES.find(c => c.value === e.category) || { emoji: "📦" };
-            return {
-              category: e.category as string,
-              emoji: cat.emoji,
-              perPerson: e.amount as number,
-              total: (e.amount as number) * MEMBERS.length,
-              description: (e.description as string) || (e.title as string) || "",
-            };
-          }));
+      .order("created_at", { ascending: true });
+
+    // Load member metadata for auto-populated costs
+    const loadMembers = supabase.from("trip_members")
+      .select("metadata, user_id")
+      .eq("trip_id", String(activeTrip.id));
+
+    Promise.all([loadRequired, loadMembers]).then(([reqRes, memRes]) => {
+      const expenses: RequiredExpense[] = [];
+
+      // Add manually created required expenses
+      if (reqRes.data && reqRes.data.length > 0) {
+        for (const e of reqRes.data) {
+          const cat = REQUIRED_EXPENSE_CATEGORIES.find(c => c.value === e.category) || { emoji: "📦" };
+          expenses.push({
+            category: e.category as string,
+            emoji: cat.emoji,
+            perPerson: e.amount as number,
+            total: (e.amount as number) * MEMBERS.length,
+            description: (e.description as string) || (e.title as string) || "",
+          });
         }
-      });
+      }
+
+      // Auto-populate from member travel metadata
+      if (memRes.data) {
+        let totalFlightCost = 0;
+        let totalAccomCost = 0;
+        let accomNights = 0;
+        let membersWithFlights = 0;
+        let membersWithAccom = 0;
+
+        for (const member of memRes.data) {
+          const meta = (member.metadata || {}) as Record<string, unknown>;
+          if (meta.flight_cost && Number(meta.flight_cost) > 0) {
+            totalFlightCost += Number(meta.flight_cost);
+            membersWithFlights++;
+          }
+          if (meta.accommodation_cost_per_night && Number(meta.accommodation_cost_per_night) > 0) {
+            const costPerNight = Number(meta.accommodation_cost_per_night);
+            const checkin = meta.accommodation_checkin as string;
+            const checkout = meta.accommodation_checkout as string;
+            let nights = 1;
+            if (checkin && checkout) {
+              nights = Math.max(1, Math.ceil((new Date(checkout).getTime() - new Date(checkin).getTime()) / (1000 * 60 * 60 * 24)));
+            }
+            totalAccomCost += costPerNight * nights;
+            accomNights = Math.max(accomNights, nights);
+            membersWithAccom++;
+          }
+        }
+
+        // Add auto-populated flight expense if any member has flight costs
+        if (totalFlightCost > 0 && !expenses.some(e => e.category === "Flights" && e.description.startsWith("Auto"))) {
+          const perPerson = Math.round(totalFlightCost / Math.max(MEMBERS.length, membersWithFlights));
+          expenses.unshift({
+            category: "Flights",
+            emoji: "✈️",
+            perPerson,
+            total: totalFlightCost,
+            description: `Auto: ${membersWithFlights} member${membersWithFlights > 1 ? "s" : ""} reported flights`,
+          });
+        }
+
+        // Add auto-populated accommodation expense
+        if (totalAccomCost > 0 && !expenses.some(e => e.category === "Accommodation" && e.description.startsWith("Auto"))) {
+          const perPerson = Math.round(totalAccomCost / Math.max(MEMBERS.length, membersWithAccom));
+          expenses.unshift({
+            category: "Accommodation",
+            emoji: "🏨",
+            perPerson,
+            total: totalAccomCost,
+            description: `Auto: ${accomNights} night${accomNights > 1 ? "s" : ""} · $${Math.round(totalAccomCost / Math.max(accomNights, 1))}/night`,
+          });
+        }
+      }
+
+      setRequiredExpenses(expenses);
+    });
   }, [activeTrip?.id, user, MEMBERS.length]);
 
   const totalRequiredPerPerson = requiredExpenses.reduce((sum, e) => sum + e.perPerson, 0);
