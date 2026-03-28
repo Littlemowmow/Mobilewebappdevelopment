@@ -177,6 +177,76 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
             </button>
           </div>
         </div>
+
+        {/* Propose Activity Modal (also available from empty state) */}
+        {showPropose && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center" onClick={() => setShowPropose(false)}>
+            <div className="w-full max-w-md bg-zinc-950 rounded-t-[24px] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-[18px] font-semibold text-white">Propose an Activity</h3>
+                <button onClick={() => setShowPropose(false)} className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center">
+                  <X className="w-4 h-4 text-zinc-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Activity name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Deep dish pizza at Lou Malnati's"
+                    value={proposeName}
+                    onChange={(e) => setProposeName(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-[15px] text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Location</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                    <input
+                      type="text"
+                      placeholder="e.g., River North, Chicago"
+                      value={proposeLocation}
+                      onChange={(e) => setProposeLocation(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-4 py-3 text-[15px] text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">Category</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Food", "Culture", "Nature", "Shopping", "Adventure"].map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setProposeTag(tag)}
+                        className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all ${
+                          proposeTag === tag
+                            ? "bg-orange-500 text-white"
+                            : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={handlePropose}
+                  disabled={!proposeName.trim()}
+                  className="w-full py-4 bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-2xl text-[15px] font-semibold shadow-lg shadow-orange-600/30 disabled:opacity-40 flex items-center justify-center gap-2 mt-2"
+                >
+                  <Send className="w-4 h-4" />
+                  Propose to Group
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

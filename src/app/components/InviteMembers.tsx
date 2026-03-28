@@ -71,7 +71,7 @@ export function InviteMembers() {
     setFriends([...friends, { name, emoji: friendEmoji }]);
     // Also add to trip context so they show in TripDetail member list
     const colors = ["bg-teal-500", "bg-purple-500", "bg-blue-500", "bg-pink-500", "bg-amber-500"];
-    addMember(trip.id, name, colors[friends.length % colors.length]);
+    addMember(trip.id, name, colors[friends.length % colors.length], friendEmoji);
     setFriendName("");
     setFriendEmoji("😎");
     setShowAddFriend(false);

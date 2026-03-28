@@ -503,7 +503,7 @@ export function Discover() {
 
     setPlaces(prev => [...prev, ...newPlaces.sort(() => Math.random() - 0.5)]);
     setFetchedCities(prev => [...prev, ...newCities]);
-    setCurrentIndex(0);
+    // Don't reset currentIndex — continue from where user left off so they see the new cards
     setLoadingMore(false);
   }, [fetchedCities, places]);
 
@@ -521,7 +521,13 @@ export function Discover() {
       setPlaces([]);
       setFetchError(true);
     } else {
-      setPlaces((data || []).map(mapActivityToPlace));
+      // Apply the same content filter as the main fetch
+      const BLOCKED = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "hookah", "casino", "gambling", "strip club", "strip joint", "stripclub"];
+      const cleanData = (data || []).filter(a => {
+        const text = `${a.name || ""} ${a.description || ""} ${a.experience_tag || ""} ${(a.tags || []).join(" ")}`.toLowerCase();
+        return !BLOCKED.some(kw => new RegExp(`\\b${kw}\\b`).test(text));
+      });
+      setPlaces(cleanData.map(mapActivityToPlace));
     }
     setLoading(false);
   }, []);

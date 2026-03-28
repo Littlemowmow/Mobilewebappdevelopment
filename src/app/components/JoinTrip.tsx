@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -11,10 +11,19 @@ const ACCOMMODATION_TYPES = ["Hotel", "Airbnb", "Hostel", "Friend's place", "Oth
 export function JoinTrip() {
   const { code } = useParams();
   const navigate = useNavigate();
-  const { user, signUp, signIn } = useAuth();
+  const { user, profile, signUp, signIn } = useAuth();
 
   const [step, setStep] = useState<"profile" | "auth" | "joining" | "done">(user ? "profile" : "auth");
   const [name, setName] = useState("");
+
+  // Pre-fill name from profile when it loads (e.g. after sign-in)
+  useEffect(() => {
+    if (profile && !name) {
+      const profileName = profile.display_name || profile.name || "";
+      if (profileName) setName(profileName);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
   const [phone, setPhone] = useState("");
   const [emoji, setEmoji] = useState("😎");
   const [email, setEmail] = useState("");

@@ -43,6 +43,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       // Save preferences to Supabase profile
       if (user) {
         supabase.from("profiles").update({
+          name: name.trim() || profile?.name || profile?.display_name,
           display_name: name.trim() || profile?.display_name,
           preferences: {
             interests,
