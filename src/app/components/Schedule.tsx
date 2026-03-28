@@ -1,9 +1,10 @@
-import { Plane, Home, Landmark, ChevronRight, Clock, ArrowLeft, Camera, Utensils, Music, ShoppingBag, Coffee, X, MapPin } from "lucide-react";
+import { Plane, Home, Landmark, ChevronRight, Clock, ArrowLeft, Camera, Utensils, Music, ShoppingBag, Coffee, X, MapPin, GripVertical } from "lucide-react";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Link } from "react-router";
 import { useState, useEffect } from "react";
+import { Reorder, useDragControls } from "motion/react";
 import type { LucideIcon } from "lucide-react";
 
 interface Activity {
@@ -26,6 +27,90 @@ const TYPE_CONFIG: Record<string, { badge: string; badgeColor: string; icon: Luc
   "MUST DO": { badge: "MUST DO", badgeColor: "bg-pink-500", icon: Landmark, iconBg: "bg-pink-50 dark:bg-pink-900/30", iconColor: "text-pink-600 dark:text-pink-400", dotColor: "bg-pink-500" },
   LOCAL: { badge: "LOCAL", badgeColor: "bg-purple-500", icon: Coffee, iconBg: "bg-purple-50 dark:bg-purple-900/30", iconColor: "text-purple-600 dark:text-purple-400", dotColor: "bg-purple-500" },
 };
+
+function DraggableActivityCard({ activity, isDeletable, onDelete, onTap }: {
+  activity: Activity;
+  isDeletable: boolean;
+  onDelete: () => void;
+  onTap: () => void;
+}) {
+  const dragControls = useDragControls();
+  const Icon = activity.icon;
+
+  return (
+    <Reorder.Item
+      value={activity}
+      dragListener={false}
+      dragControls={dragControls}
+      className="relative"
+      whileDrag={{ scale: 1.02, boxShadow: "0 8px 30px rgba(0,0,0,0.2)" }}
+    >
+      {/* Dot */}
+      <div className="absolute left-0 top-7 w-[52px] flex justify-center z-10">
+        <div className={`w-3 h-3 rounded-full ${activity.dotColor} border-[3px] border-zinc-50 dark:border-black shadow-lg`} />
+      </div>
+
+      {/* Card */}
+      <div className="ml-[52px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[20px] p-5 shadow-md border border-zinc-200/50 dark:border-zinc-800">
+        <div className="flex items-start gap-3">
+          {/* Drag handle */}
+          <div
+            className="flex items-center justify-center w-6 h-12 cursor-grab active:cursor-grabbing touch-none shrink-0 -ml-1"
+            onPointerDown={(e) => dragControls.start(e)}
+          >
+            <GripVertical className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />
+          </div>
+
+          <div
+            className={`w-11 h-11 rounded-xl ${activity.iconBg} flex items-center justify-center flex-shrink-0 border border-zinc-100/50 dark:border-zinc-800`}
+            onClick={onTap}
+          >
+            <Icon className={`w-5 h-5 ${activity.iconColor}`} strokeWidth={2} />
+          </div>
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={onTap}>
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <h3 className="font-semibold text-[15px] text-zinc-900 dark:text-zinc-100 leading-tight">{activity.title}</h3>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {activity.price && (
+                  <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{activity.price}</span>
+                )}
+                {isDeletable && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    aria-label={`Delete ${activity.title}`}
+                    className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                <span className="font-medium">{activity.time}</span>
+              </div>
+              {activity.duration && (
+                <>
+                  <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                  <span className="font-medium">{activity.duration}</span>
+                </>
+              )}
+              {activity.badge && (
+                <span className={`${activity.badgeColor} text-white px-2.5 py-1 rounded-md text-xs font-bold tracking-wide shadow-sm`}>
+                  {activity.badge}
+                </span>
+              )}
+            </div>
+            {activity.subtitle && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-1">{activity.subtitle}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </Reorder.Item>
+  );
+}
 
 export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
   const { activeTrip, setActiveTrip, approvedActivities, proposedActivities } = useTrip();
@@ -301,7 +386,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
           </p>
         </div>
       ) : (
-      <div className="space-y-4 relative">
+      <div className="relative">
         {/* Timeline line */}
         <div className="absolute left-[26px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-zinc-200 dark:from-zinc-800 via-zinc-200 dark:via-zinc-800 to-transparent" />
 
@@ -318,73 +403,27 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
           </div>
         ))}
 
-        {currentActivities.map((activity, index) => {
-          const Icon = activity.icon;
-          const isLast = index === currentActivities.length - 1;
-          
-          return (
-            <div key={activity.id} className="relative">
-              {/* Dot */}
-              <div className="absolute left-0 top-7 w-[52px] flex justify-center z-10">
-                <div className={`w-3 h-3 rounded-full ${activity.dotColor} border-[3px] border-zinc-50 dark:border-black shadow-lg`} />
-              </div>
-
-              {/* Card */}
-              <div
-                className="ml-[52px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white rounded-[20px] p-5 shadow-md hover:shadow-lg transition-shadow border border-zinc-200/50 dark:border-zinc-800 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-900"
-                onClick={() => setDetailActivity(activity)}
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-xl ${activity.iconBg} flex items-center justify-center flex-shrink-0 border border-zinc-100/50 dark:border-zinc-800`}>
-                    <Icon className={`w-6 h-6 ${activity.iconColor}`} strokeWidth={2} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <h3 className="font-semibold text-[16px] text-zinc-900 dark:text-zinc-100 leading-tight">{activity.title}</h3>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {activity.price && (
-                          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{activity.price}</span>
-                        )}
-                        {extraActivities.some(a => a.id === activity.id) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteActivity(activity.id);
-                            }}
-                            aria-label={`Delete ${activity.title}`}
-                            className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 mb-2 flex-wrap">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span className="font-medium">{activity.time}</span>
-                      </div>
-                      {activity.duration && (
-                        <>
-                          <span className="text-zinc-300 dark:text-zinc-600">•</span>
-                          <span className="font-medium">{activity.duration}</span>
-                        </>
-                      )}
-                      {activity.badge && (
-                        <span className={`${activity.badgeColor} text-white px-2.5 py-1 rounded-md text-xs font-bold tracking-wide shadow-sm`}>
-                          {activity.badge}
-                        </span>
-                      )}
-                    </div>
-                    {activity.subtitle && (
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">{activity.subtitle}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        <Reorder.Group
+          axis="y"
+          values={currentActivities}
+          onReorder={(reordered) => {
+            // Split reordered list back into base + added
+            const baseIds = new Set((currentCity.activities[selectedDay] || []).map(a => a.id));
+            const newAdded = reordered.filter(a => !baseIds.has(a.id));
+            setAddedActivities(prev => ({ ...prev, [key]: newAdded }));
+          }}
+          className="space-y-4"
+        >
+          {currentActivities.map((activity) => (
+            <DraggableActivityCard
+              key={activity.id}
+              activity={activity}
+              isDeletable={extraActivities.some(a => a.id === activity.id)}
+              onDelete={() => handleDeleteActivity(activity.id)}
+              onTap={() => setDetailActivity(activity)}
+            />
+          ))}
+        </Reorder.Group>
       </div>
       )}
 
