@@ -191,9 +191,10 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
           || `A ${cat.toLowerCase()} spot in ${cityName}.`;
 
         // Skip blocked content (haram: bars, pubs, alcohol, gambling)
+        // Uses word-boundary matching to avoid false positives (e.g. "Barcelona", "The Strip" Las Vegas landmark)
         const fullCheck = `${name} ${description} ${amenity}`.toLowerCase();
-        const blocked = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "hookah", "casino", "gambling", "strip"];
-        if (blocked.some(kw => fullCheck.includes(kw))) continue;
+        const blocked = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "hookah", "casino", "gambling", "strip club", "strip joint", "stripclub"];
+        if (blocked.some(kw => new RegExp(`\\b${kw}\\b`).test(fullCheck))) continue;
 
         results.push({
           id: `osm_${el.id}`,
@@ -383,12 +384,15 @@ export function Discover() {
   const { activeTrip, setActiveTrip, trips, proposeActivity } = useTrip();
   const { user } = useAuth();
 
-  // Clear activity cache on logout to prevent data leak between users
+  // Clear activity cache when user changes (login/logout/switch) to prevent cross-session data leak
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
-    if (!user) {
+    const currentId = user?.id ?? null;
+    if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== currentId) {
       activityCache.clear();
     }
-  }, [user]);
+    prevUserIdRef.current = currentId;
+  }, [user?.id]);
 
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
@@ -440,10 +444,11 @@ export function Discover() {
       }
 
       // Filter haram content from Supabase results
-      const BLOCKED = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "hookah", "casino", "gambling", "strip"];
+      // Word-boundary matching to avoid false positives (e.g. "Barcelona", "The Strip" Las Vegas landmark)
+      const BLOCKED = ["bar", "pub", "nightclub", "brewery", "winery", "wine", "beer", "cocktail", "alcohol", "liquor", "tavern", "saloon", "hookah", "casino", "gambling", "strip club", "strip joint", "stripclub"];
       const cleanData = (data || []).filter(a => {
         const text = `${a.name || ""} ${a.description || ""} ${a.experience_tag || ""} ${(a.tags || []).join(" ")}`.toLowerCase();
-        return !BLOCKED.some(kw => text.includes(kw));
+        return !BLOCKED.some(kw => new RegExp(`\\b${kw}\\b`).test(text));
       });
       let activities = cleanData.map(mapActivityToPlace);
 

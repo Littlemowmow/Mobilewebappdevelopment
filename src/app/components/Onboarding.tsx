@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { motion } from "motion/react";
-import { Compass, Plane, Calendar, ThumbsUp, ThumbsDown, Users, GripVertical, DollarSign } from "lucide-react";
+import { Compass, Plane, Calendar, ThumbsUp, ThumbsDown, GripVertical, DollarSign } from "lucide-react";
 
 const STEPS = [
   {

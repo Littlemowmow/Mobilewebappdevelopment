@@ -344,6 +344,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
 
+    try {
     // Fetch current user's profile for owner initial
     let ownerInitial = user.email?.charAt(0).toUpperCase() || "?";
     const { data: ownerProfile } = await supabase
@@ -465,7 +466,12 @@ export function TripProvider({ children }: { children: ReactNode }) {
     } else if (ownedError) {
       if (import.meta.env.DEV) console.error("Failed to load trips:", ownedError);
     }
-    setLoading(false);
+    } catch (err) {
+      // Graceful handling when Supabase is completely unreachable
+      if (import.meta.env.DEV) console.error("Supabase unreachable — showing empty state:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -588,7 +594,15 @@ export function TripProvider({ children }: { children: ReactNode }) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ city: cityName.trim() }),
-          }).catch(() => {});
+          }).catch((err) => {
+            if (import.meta.env.DEV) {
+              console.warn(
+                `[dev] /api/sync-activities failed for "${cityName.trim()}". ` +
+                `This is expected in local dev — the endpoint only exists as a Vercel serverless function.`,
+                err
+              );
+            }
+          });
         }
 
         // Auto-create required expenses from shared costs
