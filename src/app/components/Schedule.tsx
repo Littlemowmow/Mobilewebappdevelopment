@@ -164,7 +164,8 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
           setAddedActivities(grouped);
         }
       });
-  }, [activeTrip?.id, user?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTrip?.id, user]);
 
   const resetForm = () => {
     setFormTitle("");
@@ -260,7 +261,14 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
     );
   }
 
-  const currentCity = activeTrip.cities[selectedCity];
+  const currentCity = activeTrip.cities[selectedCity] ?? activeTrip.cities[0];
+  if (!currentCity) {
+    return (
+      <div className="px-5 py-4 text-center">
+        <p className="text-zinc-500 dark:text-zinc-400">No cities in this trip yet.</p>
+      </div>
+    );
+  }
   const key = `${selectedCity}-${selectedDay}`;
   const extraActivities = addedActivities[key] || [];
   const currentActivities = [...(currentCity.activities[selectedDay] || []), ...extraActivities];

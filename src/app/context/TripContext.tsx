@@ -236,7 +236,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
           .update({ status: "approved" })
           .eq("trip_id", activeTrip.id)
           .eq("name", activity.name)
-          .then(() => {});
+          .then(({ error }) => {
+            if (error && import.meta.env.DEV) console.warn("Failed to approve activity:", error.message);
+          });
       }
       return prev.map((a) => (a.id === id ? { ...a, status: "approved" as const } : a));
     });
@@ -252,7 +254,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
           .update({ status: "rejected" })
           .eq("trip_id", activeTrip.id)
           .eq("name", activity.name)
-          .then(() => {});
+          .then(({ error }) => {
+            if (error && import.meta.env.DEV) console.warn("Failed to reject activity:", error.message);
+          });
       }
       return prev.map((a) => (a.id === id ? { ...a, status: "rejected" as const } : a));
     });

@@ -88,7 +88,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
         }
         setLoadingExpenses(false);
       });
-  }, [activeTrip?.id, user]);
+  }, [activeTrip?.id, user?.id]);
 
   // Current user's initial for "isYou" checks
   const myInitial = useMemo(() => {
@@ -206,7 +206,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
 
       setRequiredExpenses(expenses);
     });
-  }, [activeTrip?.id, user, MEMBERS.length]);
+  }, [activeTrip?.id, user?.id, MEMBERS.length]);
 
   const totalRequiredPerPerson = requiredExpenses.reduce((sum, e) => sum + e.perPerson, 0);
   const totalRequired = requiredExpenses.reduce((sum, e) => sum + e.total, 0);
@@ -230,7 +230,8 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
       setTotalBudget(tripBudget);
       setTotalBudgetDraft(String(tripBudget));
     }
-  }, [activeTrip?.id, activeTrip?.budget, activeTrip?.metadata?.personal_budget]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTrip?.id, activeTrip?.budget, activeTrip?.metadata?.personal_budget, totalBudget]);
 
   // Editable category budgets
   const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>(

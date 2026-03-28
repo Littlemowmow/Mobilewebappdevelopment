@@ -33,10 +33,14 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
       .select("activity_id, vote")
       .eq("trip_id", String(activeTrip.id))
       .eq("user_id", user.id)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          if (import.meta.env.DEV) console.warn("Failed to load votes:", error.message);
+          return;
+        }
         if (data) {
           const loaded: Record<number, 'up' | 'down' | null> = {};
-          data.forEach((v: any) => { loaded[v.activity_id] = v.vote; });
+          data.forEach((v: { activity_id: number; vote: 'up' | 'down' | null }) => { loaded[v.activity_id] = v.vote; });
           setItemVotes(loaded);
         }
       });
@@ -112,7 +116,7 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
       if (vote === 'up') approveActivity(numId);
       else if (vote === 'down') rejectActivity(numId);
     });
-  }, [itemVotes, approveActivity, rejectActivity, saveVotesToSupabase]);
+  }, [itemVotes, approveActivity, rejectActivity, saveVotesToSupabase, activeTrip?.name]);
 
   const handlePropose = () => {
     if (!proposeName.trim() || !activeTrip) return;

@@ -93,7 +93,11 @@ export function Profile() {
       .from("saved_activities")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .then(({ count }) => {
+      .then(({ count, error }) => {
+        if (error) {
+          if (import.meta.env.DEV) console.warn("Failed to fetch saved places count:", error.message);
+          return;
+        }
         setPlacesCount(count ?? 0);
       });
   }, [user?.id]);
@@ -111,10 +115,13 @@ export function Profile() {
   const handleEditSave = async () => {
     if (!user?.id || !editName.trim()) return;
     setEditSaving(true);
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({ name: editName.trim(), display_name: editName.trim() })
       .eq("id", user.id);
+    if (error) {
+      if (import.meta.env.DEV) console.warn("Failed to update profile name:", error.message);
+    }
     setLocalDisplayName(editName.trim());
     setEditSaving(false);
     setIsEditing(false);

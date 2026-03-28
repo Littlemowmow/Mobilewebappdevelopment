@@ -35,7 +35,9 @@ export function Root() {
           try { localStorage.setItem("weventr-onboarding-done", "true"); } catch {}
           setShowOnboarding(false);
           if (user) {
-            supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id).then(() => {});
+            supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id).then(({ error }) => {
+            if (error && import.meta.env.DEV) console.warn("Failed to update onboarding status:", error.message);
+          });
           }
           if (!tripsLoading && trips.length === 0) {
             trackEvent("onboarding_redirect", { to: "/trips/new" });

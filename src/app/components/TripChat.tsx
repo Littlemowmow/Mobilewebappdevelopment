@@ -162,7 +162,8 @@ export function TripChat({ onClose }: { onClose: () => void }) {
         setError(err.message);
         setGenerating(false);
       });
-  }, [allDone, generating, generatedPlan, answers]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allDone]);
 
   // Create the actual trip from the generated plan
   const handleCreateTrip = async () => {

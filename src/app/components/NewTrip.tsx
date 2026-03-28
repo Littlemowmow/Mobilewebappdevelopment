@@ -71,6 +71,13 @@ function useCitySearch() {
     }, 300);
   }, []);
 
+  // Clean up pending timer on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   return { results, searching, search, clearResults: () => setResults([]) };
 }
 

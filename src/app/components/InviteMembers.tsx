@@ -49,11 +49,15 @@ export function InviteMembers() {
 
   const shareLink = async () => {
     if (navigator.share) {
-      await navigator.share({
-        title: `Join ${trip.name} on Weventr`,
-        text: `Join our trip "${trip.name}"! Use code: ${trip.code}`,
-        url: inviteLink,
-      });
+      try {
+        await navigator.share({
+          title: `Join ${trip.name} on Weventr`,
+          text: `Join our trip "${trip.name}"! Use code: ${trip.code}`,
+          url: inviteLink,
+        });
+      } catch {
+        // User cancelled the share dialog — not an error
+      }
     } else {
       copyLink();
     }
@@ -62,12 +66,12 @@ export function InviteMembers() {
   const emojiOptions = ["😎", "🤠", "🥳", "😈", "🦊", "🐸", "🌸", "⚡", "🔥", "💎", "🎯", "🌊", "🍕", "✈️", "🎒", "🗺️", "🌴", "🎭", "🎵", "🏔️"];
 
   const addFriend = () => {
-    if (!friendName.trim() || !tripId) return;
+    if (!friendName.trim() || !tripId || !trip) return;
     const name = friendName.trim();
     setFriends([...friends, { name, emoji: friendEmoji }]);
     // Also add to trip context so they show in TripDetail member list
     const colors = ["bg-teal-500", "bg-purple-500", "bg-blue-500", "bg-pink-500", "bg-amber-500"];
-    addMember(tripId, name, colors[friends.length % colors.length]);
+    addMember(trip.id, name, colors[friends.length % colors.length]);
     setFriendName("");
     setFriendEmoji("😎");
     setShowAddFriend(false);

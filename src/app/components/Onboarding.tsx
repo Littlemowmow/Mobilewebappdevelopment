@@ -48,7 +48,9 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
             interests,
             dream_destination: dreamCity.trim(),
           },
-        }).eq("id", user.id).then(() => {});
+        }).eq("id", user.id).then(({ error }) => {
+          if (error && import.meta.env.DEV) console.warn("Failed to save onboarding preferences:", error.message);
+        });
       }
       trackEvent("onboarding_completed", { interests_count: interests.length, dream_city: dreamCity });
       onComplete();
