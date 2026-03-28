@@ -1006,9 +1006,9 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="h-full rounded-[20px] overflow-hidden bg-white dark:bg-zinc-900 shadow-2xl dark:shadow-[0_8px_50px_rgba(0,0,0,0.6)] border border-zinc-200/50 dark:border-zinc-700/40 flex flex-col">
-        {/* Image */}
-        <div className={`relative flex-1 min-h-0 bg-gradient-to-br ${!imageSrc ? noImageStyle.gradient : "from-orange-600 via-rose-500 to-amber-500"}`}>
+      <div className="h-full rounded-[20px] overflow-hidden bg-white dark:bg-zinc-900 shadow-2xl dark:shadow-[0_8px_50px_rgba(0,0,0,0.6)] border border-zinc-200/50 dark:border-zinc-700/40">
+        {/* Full-bleed image */}
+        <div className={`relative h-full bg-gradient-to-br ${!imageSrc ? noImageStyle.gradient : "from-orange-600 via-rose-500 to-amber-500"}`}>
           {!imageSrc && (
             <div className={`absolute inset-0 bg-gradient-to-br ${noImageStyle.gradient} flex items-center justify-center`}>
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
@@ -1056,40 +1056,14 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
               {place.tags[1]}
             </span>
           </div>
-        </div>
 
-        {/* Content — tappable for details */}
-        <div className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white p-6 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-800 transition-all duration-200" onClick={onTap}>
-          <div className="mb-4">
-            <h3 className="text-[22px] leading-tight mb-2 font-semibold text-zinc-900 dark:text-white">{place.name}</h3>
-
-            <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 mb-3">
-              <MapPin className="w-4 h-4" strokeWidth={2} />
-              <span className="text-[15px]">{place.location}</span>
+          {/* Bottom overlay — name + location only, tap for details */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5 pt-16 cursor-pointer" onClick={onTap}>
+            <h3 className="text-white text-[18px] leading-tight font-semibold drop-shadow-lg">{place.name}</h3>
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <MapPin className="w-3.5 h-3.5 text-white/70" strokeWidth={2} />
+              <span className="text-white/70 text-[13px]">{place.location}</span>
             </div>
-
-            <p className="text-zinc-600 dark:text-zinc-400 text-[15px] leading-relaxed line-clamp-2">
-              {truncateDescription(place.description)}
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-700/50">
-            <div className="flex items-center gap-4">
-              <span className="text-zinc-700 dark:text-zinc-300 text-[15px] font-medium">{place.price}</span>
-              <span className="text-zinc-500 dark:text-zinc-400 text-[14px]">{place.duration}</span>
-            </div>
-            {place.rating > 0 && (
-              <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full border border-amber-100 dark:border-transparent">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="text-[15px] font-semibold text-zinc-900 dark:text-amber-400">{place.rating.toFixed(1)}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Tap for more indicator */}
-          <div className="flex flex-col items-center pt-2 gap-0.5">
-            <ChevronUp className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
-            <span className="text-xs text-zinc-500 dark:text-zinc-500">Tap for more →</span>
           </div>
         </div>
       </div>
