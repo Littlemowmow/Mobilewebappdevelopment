@@ -496,7 +496,7 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Why should we go?</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Why should we go? <span className="text-zinc-600">(optional)</span></label>
                 <textarea
                   placeholder="Sell it to the group..."
                   value={proposeDescription}
