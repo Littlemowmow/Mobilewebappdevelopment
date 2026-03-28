@@ -612,7 +612,7 @@ export function Discover() {
   const remainingCards = filteredPlaces.length - currentIndex;
 
   return (
-    <div className="px-5 pt-4 pb-0 flex flex-col max-w-md mx-auto" style={{ height: 'calc(100dvh - 4.5rem)' }}>
+    <div className="px-5 pt-4 pb-0 flex flex-col max-w-md md:max-w-lg mx-auto" style={{ height: 'calc(100dvh - 4.5rem)' }}>
       {/* Header */}
       <div className="flex justify-between items-center mb-5 pt-1">
         <h1 className="text-[22px] tracking-tight text-zinc-900 dark:text-white">Discover</h1>

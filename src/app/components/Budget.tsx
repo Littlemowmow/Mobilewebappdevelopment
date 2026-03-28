@@ -354,7 +354,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
 
   if (!activeTrip) {
     return (
-      <div className="px-5 py-4 max-w-md mx-auto min-h-screen flex items-center justify-center">
+      <div className="px-5 py-4 max-w-md md:max-w-2xl lg:max-w-4xl mx-auto min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">💰</div>
           <h2 className="text-xl mb-2 font-semibold text-zinc-900 dark:text-white">No Active Trip</h2>
@@ -452,7 +452,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   }
 
   return (
-    <div className="px-5 py-4 max-w-md mx-auto pb-24">
+    <div className="px-5 py-4 max-w-md md:max-w-2xl lg:max-w-4xl mx-auto pb-24">
       {/* Header with back to trips */}
       {!hideHeader && (
       <div className="flex items-center gap-3 mb-5 pt-1">

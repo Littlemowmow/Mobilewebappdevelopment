@@ -120,7 +120,7 @@ export function Profile() {
   };
 
   return (
-    <div className="px-5 py-4 max-w-md mx-auto pb-24">
+    <div className="px-5 py-4 max-w-md md:max-w-2xl mx-auto pb-24">
       {/* Header */}
       <h1 className="text-[22px] tracking-tight mb-6 pt-1 text-zinc-900 dark:text-white">Profile</h1>
 

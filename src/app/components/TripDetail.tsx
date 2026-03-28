@@ -44,7 +44,7 @@ export function TripDetail() {
 
   if (!trip) {
     return (
-      <div className="px-5 py-4 max-w-md mx-auto min-h-screen flex items-center justify-center">
+      <div className="px-5 py-4 max-w-md md:max-w-2xl lg:max-w-4xl mx-auto min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🤔</div>
           <h2 className="text-xl mb-2 font-semibold text-zinc-900 dark:text-white">Trip Not Found</h2>

@@ -58,13 +58,13 @@ export function Root() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
       {/* Main Content */}
-      <main className="max-w-md mx-auto">
+      <main className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto">
         <Outlet />
       </main>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-zinc-900/85 border-t border-zinc-200/50 dark:border-zinc-700/40 backdrop-blur-2xl backdrop-saturate-[1.8] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_40px_rgba(0,0,0,0.6)] pb-[env(safe-area-inset-bottom,0px)]">
-        <div className="max-w-md mx-auto flex justify-around items-center h-16 px-2">
+        <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex justify-around items-center h-16 px-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path ||

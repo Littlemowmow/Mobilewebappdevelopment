@@ -195,7 +195,7 @@ export function NewTrip() {
   };
 
   return (
-    <div className="px-5 py-4 max-w-md mx-auto pb-24">
+    <div className="px-5 py-4 max-w-md md:max-w-lg mx-auto pb-24">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8 pt-1">
         <Link to="/trips" aria-label="Back to trips" className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent">

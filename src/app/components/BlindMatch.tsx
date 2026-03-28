@@ -110,7 +110,7 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
   // No proposed activities — show empty state
   if (proposedActivities.length === 0) {
     return (
-      <div className="min-h-screen px-5 py-4 max-w-md mx-auto">
+      <div className="min-h-screen px-5 py-4 max-w-md md:max-w-2xl lg:max-w-4xl mx-auto">
         {!hideHeader && (
           <div className="flex items-center gap-3 mb-8 pt-1">
             <Link to="/trips" className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm dark:shadow-none border border-zinc-200/50 dark:border-transparent">
@@ -140,7 +140,7 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
   }
 
   return (
-    <div className="min-h-screen px-5 py-4 max-w-md mx-auto">
+    <div className="min-h-screen px-5 py-4 max-w-md md:max-w-2xl lg:max-w-4xl mx-auto">
       {/* Header */}
       {!hideHeader && (
       <div className="flex items-center gap-3 mb-8 pt-1">

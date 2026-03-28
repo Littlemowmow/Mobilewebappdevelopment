@@ -87,7 +87,7 @@ export function Trips() {
   };
 
   return (
-    <div className="px-5 py-4 max-w-md mx-auto">
+    <div className="px-5 py-4 max-w-md md:max-w-2xl lg:max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-4 pt-1">
         <h1 className="text-[22px] tracking-tight text-zinc-900 dark:text-white">My Trips</h1>
@@ -143,7 +143,7 @@ export function Trips() {
 
       {/* Active Trips */}
       {activeTrips.length > 0 && (
-        <div className="mb-5">
+        <div className="mb-5 md:grid md:grid-cols-2 md:gap-4">
           {activeTrips.map((trip) => (
             <button
               key={trip.id}
@@ -237,8 +237,8 @@ export function Trips() {
 
       {/* Planning Trips */}
       {planningTrips.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Planning</h3>
+        <div className="mb-6 md:grid md:grid-cols-2 md:gap-4">
+          <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide md:col-span-2">Planning</h3>
           {planningTrips.map((trip) => (
             <button
               key={trip.id}
@@ -261,8 +261,8 @@ export function Trips() {
 
       {/* Completed Trips */}
       {completedTrips.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Completed</h3>
+        <div className="mb-6 md:grid md:grid-cols-2 md:gap-4">
+          <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide md:col-span-2">Completed</h3>
           {completedTrips.map((trip) => (
             <button
               key={trip.id}
