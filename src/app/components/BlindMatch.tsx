@@ -1,4 +1,4 @@
-import { ArrowLeft, Lightbulb, Check, Clock, ThumbsUp, ThumbsDown, Sparkles, Compass } from "lucide-react";
+import { ArrowLeft, Lightbulb, Check, Clock, ThumbsUp, ThumbsDown, Sparkles, Compass, Plus, X, MapPin, Send } from "lucide-react";
 import { Link } from "react-router";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTrip } from "../context/TripContext";
@@ -16,10 +16,15 @@ const MEMBER_COLORS = [
 ];
 
 export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
-  const { activeTrip, proposedActivities, approveActivity, rejectActivity } = useTrip();
+  const { activeTrip, proposedActivities, approveActivity, rejectActivity, proposeActivity } = useTrip();
   const { user, profile } = useAuth();
   const [selectedTab, setSelectedTab] = useState<"voting" | "decided">("voting");
   const [itemVotes, setItemVotes] = useState<Record<number, 'up' | 'down' | null>>({});
+  const [showPropose, setShowPropose] = useState(false);
+  const [proposeName, setProposeName] = useState("");
+  const [proposeLocation, setProposeLocation] = useState("");
+  const [proposeDescription, setProposeDescription] = useState("");
+  const [proposeTag, setProposeTag] = useState("Food");
 
   // Load existing votes from Supabase on mount
   useEffect(() => {
@@ -109,6 +114,26 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
     });
   }, [itemVotes, approveActivity, rejectActivity, saveVotesToSupabase]);
 
+  const handlePropose = () => {
+    if (!proposeName.trim() || !activeTrip) return;
+    proposeActivity({
+      id: Date.now() + Math.floor(Math.random() * 10000),
+      name: proposeName.trim(),
+      location: proposeLocation.trim() || "",
+      city: activeTrip.cities[0]?.name || "",
+      description: proposeDescription.trim() || "",
+      tags: [proposeTag],
+      price: "",
+      duration: "",
+    });
+    trackEvent("activity_manually_proposed", { trip_name: activeTrip.name, activity: proposeName.trim() });
+    setProposeName("");
+    setProposeLocation("");
+    setProposeDescription("");
+    setProposeTag("Food");
+    setShowPropose(false);
+  };
+
   const tripName = activeTrip?.name || "Trip";
   const memberCount = members.length;
 
@@ -133,12 +158,20 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
             Swipe right on activities in <span className="font-semibold text-orange-500">Discover</span> to propose them for your group.
           </p>
           <p className="text-zinc-400 dark:text-zinc-500 text-sm mb-8">They'll show up here for everyone to vote on.</p>
-          <Link
-            to="/"
-            className="px-6 py-3 bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-2xl text-[15px] font-semibold shadow-lg shadow-orange-600/30 hover:shadow-xl hover:scale-[1.03] active:scale-[0.98] transition-all"
-          >
-            Go to Discover
-          </Link>
+          <div className="flex gap-3">
+            <Link
+              to="/"
+              className="px-5 py-3 bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-2xl text-[14px] font-semibold shadow-lg shadow-orange-600/30"
+            >
+              Discover
+            </Link>
+            <button
+              onClick={() => setShowPropose(true)}
+              className="px-5 py-3 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-2xl text-[14px] font-semibold border border-zinc-200 dark:border-zinc-700 shadow-sm"
+            >
+              <Plus className="w-4 h-4 inline mr-1.5 -mt-0.5" />Propose
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -164,6 +197,15 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
           </svg>
         </div>
       </div>
+
+      {/* Propose Button */}
+      <button
+        onClick={() => setShowPropose(true)}
+        className="w-full mb-4 py-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 border-dashed rounded-2xl text-[14px] font-semibold text-zinc-600 dark:text-zinc-400 hover:border-orange-300 dark:hover:border-orange-700/50 hover:text-orange-500 transition-all flex items-center justify-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        Propose an Activity
+      </button>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 bg-zinc-100 dark:bg-zinc-900 rounded-2xl p-1">
@@ -412,9 +454,90 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
       <div className="mt-8 mb-8 p-5 bg-white dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-[20px] shadow-sm dark:shadow-none">
         <h4 className="text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">How it works</h4>
         <p className="text-sm text-zinc-600 dark:text-zinc-500 leading-relaxed">
-          When someone swipes right on an activity in Discover, it gets proposed here. Vote on each activity — thumbs up or down — then submit to see group decisions. Your votes are saved automatically.
+          Propose activities from Discover or add your own. Everyone votes privately — thumbs up or down. Submit to see group decisions.
         </p>
       </div>
+
+      {/* Propose Activity Modal */}
+      {showPropose && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center" onClick={() => setShowPropose(false)}>
+          <div className="w-full max-w-md bg-zinc-950 rounded-t-[24px] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-[18px] font-semibold text-white">Propose an Activity</h3>
+              <button onClick={() => setShowPropose(false)} className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center">
+                <X className="w-4 h-4 text-zinc-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Activity name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Deep dish pizza at Lou Malnati's"
+                  value={proposeName}
+                  onChange={(e) => setProposeName(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-[15px] text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Location</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                  <input
+                    type="text"
+                    placeholder="e.g., River North, Chicago"
+                    value={proposeLocation}
+                    onChange={(e) => setProposeLocation(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-4 py-3 text-[15px] text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Why should we go?</label>
+                <textarea
+                  placeholder="Sell it to the group..."
+                  value={proposeDescription}
+                  onChange={(e) => setProposeDescription(e.target.value)}
+                  rows={2}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-[15px] text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">Category</label>
+                <div className="flex flex-wrap gap-2">
+                  {["Food", "Culture", "Nightlife", "Nature", "Shopping", "Adventure"].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setProposeTag(tag)}
+                      className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all ${
+                        proposeTag === tag
+                          ? "bg-orange-500 text-white"
+                          : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={handlePropose}
+                disabled={!proposeName.trim()}
+                className="w-full py-4 bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-2xl text-[15px] font-semibold shadow-lg shadow-orange-600/30 disabled:opacity-40 flex items-center justify-center gap-2 mt-2"
+              >
+                <Send className="w-4 h-4" />
+                Propose to Group
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
