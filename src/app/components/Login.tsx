@@ -49,11 +49,10 @@ export function Login() {
 
     if (result.error) {
       setError(mapAuthError(result.error))
-      setLoading(false)
     }
-    // On success: AuthContext sets loading=true while onAuthStateChange fires.
-    // Root's auth guard will redirect to "/" automatically once user is set.
-    // Do not call navigate() here — avoids a flash where user is null + loading=false.
+    // Always stop the button loading state.
+    // On success, Root's auth guard will redirect to "/" once onAuthStateChange fires.
+    setLoading(false)
   }
 
   const handleResetPassword = async () => {
