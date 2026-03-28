@@ -498,7 +498,7 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-2">Category</label>
                 <div className="flex flex-wrap gap-2">
-                  {["Food", "Culture", "Nightlife", "Nature", "Shopping", "Adventure"].map((tag) => (
+                  {["Food", "Culture", "Nature", "Shopping", "Adventure"].map((tag) => (
                     <button
                       key={tag}
                       type="button"

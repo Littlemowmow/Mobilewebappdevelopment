@@ -8,7 +8,6 @@ import { useAuth } from "../context/AuthContext";
 const INTEREST_TAGS = [
   { value: "food", label: "Foodie", emoji: "🍜" },
   { value: "culture", label: "Culture", emoji: "🏛️" },
-  { value: "nightlife", label: "Nightlife", emoji: "🌙" },
   { value: "nature", label: "Nature", emoji: "🌿" },
   { value: "adventure", label: "Adventure", emoji: "🧗" },
   { value: "shopping", label: "Shopping", emoji: "🛍️" },

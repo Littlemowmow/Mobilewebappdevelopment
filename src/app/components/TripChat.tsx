@@ -19,7 +19,6 @@ const STEPS = [
   { id: "interests", question: "What are you into?", placeholder: "", icon: Utensils, type: "multi" as const, choices: [
     { value: "food", label: "Foodie", emoji: "🍜" },
     { value: "culture", label: "Culture", emoji: "🏛️" },
-    { value: "nightlife", label: "Nightlife", emoji: "🌙" },
     { value: "nature", label: "Nature", emoji: "🌿" },
     { value: "adventure", label: "Adventure", emoji: "🧗" },
     { value: "shopping", label: "Shopping", emoji: "🛍️" },

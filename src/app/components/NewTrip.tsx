@@ -586,7 +586,6 @@ export function NewTrip() {
           {([
             { key: "food", label: "Foodie", emoji: "🍜" },
             { key: "culture", label: "Culture", emoji: "🏛️" },
-            { key: "nightlife", label: "Nightlife", emoji: "🌙" },
             { key: "nature", label: "Nature", emoji: "🌿" },
             { key: "adventure", label: "Adventure", emoji: "🧗" },
             { key: "shopping", label: "Shopping", emoji: "🛍️" },
