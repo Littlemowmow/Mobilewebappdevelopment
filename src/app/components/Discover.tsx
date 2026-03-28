@@ -1,4 +1,4 @@
-import { Filter, MapPin, Star, X, Heart, Plane, ChevronUp } from "lucide-react";
+import { Filter, MapPin, Star, X, Heart, Plane } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, useMotionValue, AnimatePresence, type PanInfo } from "motion/react";
@@ -37,12 +37,37 @@ interface WikimediaImagePage {
 }
 
 // Cache for fetched activities per city — avoids refetching on city switch
-const activityCache: Record<string, Place[]> = {};
+// LRU-style: max 500 entries, evict oldest when exceeded
+const ACTIVITY_CACHE_MAX = 500;
+const activityCache = new Map<string, Place[]>();
+
+function activityCacheSet(key: string, value: Place[]): void {
+  // Evict oldest entries if cache is full
+  if (activityCache.size >= ACTIVITY_CACHE_MAX) {
+    const firstKey = activityCache.keys().next().value;
+    if (firstKey !== undefined) activityCache.delete(firstKey);
+  }
+  activityCache.set(key, value);
+}
+
+function activityCacheGet(key: string): Place[] | undefined {
+  return activityCache.get(key);
+}
+
+// Bucket-list destinations for free swiping mode (single source of truth)
+const BUCKET_LIST_CITIES = [
+  "Interlaken", "Zermatt", "Queenstown", "Reykjavik", "Cusco",
+  "Marrakech", "Cappadocia", "Santorini", "Dubrovnik", "Kyoto",
+  "Banff", "Patagonia", "Zanzibar", "Kathmandu", "Siem Reap",
+  "Petra", "Luang Prabang", "Amalfi", "Tromsø", "Hallstatt",
+  "Machu Picchu", "Lauterbrunnen", "Bagan", "Chefchaouen", "Kotor",
+];
 
 // Fetch activities directly from free APIs (no serverless function needed)
 async function fetchLiveActivities(cityName: string): Promise<Place[]> {
   // Return cached if available
-  if (activityCache[cityName]?.length > 0) return activityCache[cityName];
+  const cached = activityCacheGet(cityName);
+  if (cached && cached.length > 0) return cached;
 
   const results: Place[] = [];
 
@@ -56,7 +81,7 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
     if (geoData.length === 0) return [];
     lat = parseFloat(geoData[0].lat);
     lon = parseFloat(geoData[0].lon);
-  } catch (err) { console.warn("Geocode failed:", err); return []; }
+  } catch { return []; }
 
   // Fetch Overpass + Wikipedia in PARALLEL for speed
   const [osmResults, wikiResults] = await Promise.all([
@@ -77,7 +102,7 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
           const data = await res.json();
           const pages = data.query?.pages;
           if (pages) {
-            const page = Object.values(pages)[0] as any;
+            const page = Object.values(pages)[0] as WikimediaImagePage | undefined;
             const url = page?.imageinfo?.[0]?.thumburl;
             if (url && !url.includes(".svg")) place.image = url;
           }
@@ -87,7 +112,7 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
   }
 
   // Cache and return
-  activityCache[cityName] = results;
+  activityCacheSet(cityName, results);
 
   // Persist to Supabase so they're not lost next session
   if (results.length > 0) {
@@ -104,7 +129,7 @@ async function fetchLiveActivities(cityName: string): Promise<Place[]> {
     }));
     // Upsert by name+city to avoid duplicates
     supabase.from("activities").upsert(rows, { onConflict: "name,city", ignoreDuplicates: true }).then(({ error }) => {
-      if (error) console.warn("Failed to persist activities:", error.message);
+      if (error && import.meta.env.DEV) console.warn("Failed to persist activities:", error.message);
     });
   }
 
@@ -199,7 +224,7 @@ async function fetchOverpassPlaces(lat: number, lon: number, cityName: string): 
         });
       }
     }
-  } catch (err) { console.warn("Place fetch failed:", err); }
+  } catch { /* Overpass fetch failed — non-critical */ }
   return results;
 }
 
@@ -215,13 +240,13 @@ async function fetchWikipediaPlaces(lat: number, lon: number, cityName: string):
 
       // Filter to likely tourist spots (skip battles, administrative stuff)
       const skipWords = ["battle", "siege", "rebellion", "district", "ward", "prefecture", "station", "line"];
-      const validPages = pages.filter((p: any) =>
+      const validPages = pages.filter((p: WikiPage) =>
         !skipWords.some(w => p.title.toLowerCase().includes(w))
       );
 
       // Fetch extracts for valid pages
       if (validPages.length > 0) {
-        const pageIds = validPages.slice(0, 8).map((p: any) => p.pageid).join("|");
+        const pageIds = validPages.slice(0, 8).map((p: WikiPage) => p.pageid).join("|");
         const extractRes = await fetch(
           `https://en.wikipedia.org/w/api.php?action=query&pageids=${pageIds}&prop=extracts|pageimages&exintro=1&explaintext=1&exsentences=2&piprop=thumbnail&pithumbsize=400&format=json&origin=*`
         );
@@ -230,7 +255,7 @@ async function fetchWikipediaPlaces(lat: number, lon: number, cityName: string):
           const pagesMap = extractData.query?.pages || {};
           const existing = new Set(results.map(r => r.name.toLowerCase()));
 
-          for (const page of Object.values(pagesMap) as any[]) {
+          for (const page of Object.values(pagesMap) as WikiPageExtract[]) {
             if (!page.title || existing.has(page.title.toLowerCase())) continue;
             if (!page.extract || page.extract.length < 20) continue;
             existing.add(page.title.toLowerCase());
@@ -251,7 +276,7 @@ async function fetchWikipediaPlaces(lat: number, lon: number, cityName: string):
         }
       }
     }
-  } catch (err) { console.warn("Place fetch failed:", err); }
+  } catch { /* Wikipedia fetch failed — non-critical */ }
 
   return results;
 }
@@ -285,8 +310,23 @@ function formatCostTier(costTier: number | string | null | undefined): string {
   return "$".repeat(Math.max(1, Math.min(4, costTier)));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapActivityToPlace(activity: any): Place {
+/** Shape of an activity row from Supabase */
+interface SupabaseActivity {
+  id: string;
+  name?: string;
+  neighborhood?: string;
+  city?: string;
+  description?: string;
+  cost_tier?: number | string | null;
+  duration_minutes?: number | null;
+  tags?: string[];
+  experience_tag?: string;
+  images?: string[];
+  image_url?: string;
+  sidequest_score?: number;
+}
+
+function mapActivityToPlace(activity: SupabaseActivity): Place {
   const location = [activity.neighborhood, activity.city]
     .filter(Boolean)
     .join(", ");
@@ -346,7 +386,7 @@ export function Discover() {
   // Clear activity cache on logout to prevent data leak between users
   useEffect(() => {
     if (!user) {
-      Object.keys(activityCache).forEach(k => delete activityCache[k]);
+      activityCache.clear();
     }
   }, [user]);
 
@@ -392,7 +432,7 @@ export function Discover() {
       if (cancelled) return;
 
       if (error) {
-        console.error("Failed to fetch activities:", error);
+        if (import.meta.env.DEV) console.error("Failed to fetch activities:", error);
         setFetchError(true);
         setPlaces([]);
         setLoading(false);
@@ -409,13 +449,6 @@ export function Discover() {
 
       // Always fetch live activities for trip cities (Supabase may be stale/empty)
       // Free swiping = bucket-list destinations, epic adventures, world wonders
-      const BUCKET_LIST_CITIES = [
-        "Interlaken", "Zermatt", "Queenstown", "Reykjavik", "Cusco",
-        "Marrakech", "Cappadocia", "Santorini", "Dubrovnik", "Kyoto",
-        "Banff", "Patagonia", "Zanzibar", "Kathmandu", "Siem Reap",
-        "Petra", "Luang Prabang", "Amalfi", "Tromsø", "Hallstatt",
-        "Machu Picchu", "Lauterbrunnen", "Bagan", "Chefchaouen", "Kotor",
-      ];
       const citiesToFetch = tripCities.length > 0
         ? tripCities
         : BUCKET_LIST_CITIES.sort(() => Math.random() - 0.5).slice(0, 4);
@@ -447,13 +480,6 @@ export function Discover() {
   }, [activeTrip?.id]);
 
   const fetchMore = useCallback(async () => {
-    const BUCKET_LIST_CITIES = [
-      "Interlaken", "Zermatt", "Queenstown", "Reykjavik", "Cusco",
-      "Marrakech", "Cappadocia", "Santorini", "Dubrovnik", "Kyoto",
-      "Banff", "Patagonia", "Zanzibar", "Kathmandu", "Siem Reap",
-      "Petra", "Luang Prabang", "Amalfi", "Tromsø", "Hallstatt",
-      "Machu Picchu", "Lauterbrunnen", "Bagan", "Chefchaouen", "Kotor",
-    ];
     const remaining = BUCKET_LIST_CITIES.filter(c => !fetchedCities.includes(c));
     if (remaining.length === 0) return;
 
@@ -485,7 +511,7 @@ export function Discover() {
       .limit(50);
 
     if (error) {
-      console.error("Failed to fetch activities:", error);
+      if (import.meta.env.DEV) console.error("Failed to fetch activities:", error);
       setPlaces([]);
       setFetchError(true);
     } else {
@@ -545,7 +571,7 @@ export function Discover() {
         city: cityName?.toLowerCase() || null,
       });
       if (error) {
-        console.error("Failed to save activity:", error);
+        if (import.meta.env.DEV) console.error("Failed to save activity:", error);
       }
     },
     [user]

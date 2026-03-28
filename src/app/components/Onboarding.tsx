@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { motion } from "motion/react";
 import { Compass, Plane, Calendar, ThumbsUp, ThumbsDown, Users, GripVertical, DollarSign } from "lucide-react";
 
@@ -39,6 +39,7 @@ const STEPS = [
 
 export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
 
   const goNext = useCallback(() => {
     if (step < STEPS.length - 1) {
@@ -73,11 +74,11 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       {/* Content */}
       <div
         className="flex-1 flex flex-col items-center justify-center px-8"
-        onTouchStart={(e) => { (e.currentTarget as any)._touchX = e.touches[0].clientX; }}
+        onTouchStart={(e) => { touchStartXRef.current = e.touches[0].clientX; }}
         onTouchEnd={(e) => {
-          const startX = (e.currentTarget as any)._touchX;
-          if (startX == null) return;
-          const diff = e.changedTouches[0].clientX - startX;
+          if (touchStartXRef.current == null) return;
+          const diff = e.changedTouches[0].clientX - touchStartXRef.current;
+          touchStartXRef.current = null;
           if (diff < -50) goNext();
           else if (diff > 50) goPrev();
         }}

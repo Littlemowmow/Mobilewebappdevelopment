@@ -44,9 +44,13 @@ function useCitySearch() {
           { headers: { "Accept-Language": "en" } }
         );
         const data = await res.json();
-        const cities: CityResult[] = data
-          .filter((r: any) => r.address?.country)
-          .map((r: any) => {
+        interface NominatimResult {
+          name?: string;
+          address?: { city?: string; town?: string; village?: string; country?: string };
+        }
+        const cities: CityResult[] = (data as NominatimResult[])
+          .filter((r) => r.address?.country)
+          .map((r) => {
             const city = r.address?.city || r.address?.town || r.address?.village || r.name || query;
             const country = r.address?.country || "";
             return {
@@ -60,7 +64,6 @@ function useCitySearch() {
           .filter((c: CityResult, i: number, arr: CityResult[]) => arr.findIndex(a => a.display === c.display) === i);
         setResults(cities);
       } catch (err) {
-        console.warn("City search failed:", err);
         setResults([]);
       }
       setSearching(false);
@@ -100,20 +103,26 @@ export function NewTrip() {
   }, [startDate, endDate]);
 
   // Auto-distribute days when dates change or cities change
+  const destinationsLengthRef = useRef(destinations.length);
+  const filledCityCountRef = useRef(destinations.filter(d => d.trim()).length);
+  destinationsLengthRef.current = destinations.length;
+  filledCityCountRef.current = destinations.filter(d => d.trim()).length;
+
   useEffect(() => {
     if (tripDays <= 0) return;
-    const cityCount = destinations.filter(d => d.trim()).length || destinations.length;
+    const cityCount = filledCityCountRef.current || destinationsLengthRef.current;
     if (cityCount === 1) {
-      // Single city gets all the days
       setDaysPerCity([tripDays]);
     } else if (cityCount > 1) {
-      // Only auto-distribute if current total doesn't match trip days
-      const currentTotal = daysPerCity.reduce((s, d) => s + d, 0);
-      if (currentTotal !== tripDays) {
-        const base = Math.floor(tripDays / cityCount);
-        const remainder = tripDays % cityCount;
-        setDaysPerCity(destinations.map((_, i) => base + (i < remainder ? 1 : 0)));
-      }
+      setDaysPerCity(prev => {
+        const currentTotal = prev.reduce((s, d) => s + d, 0);
+        if (currentTotal !== tripDays) {
+          const base = Math.floor(tripDays / cityCount);
+          const remainder = tripDays % cityCount;
+          return Array.from({ length: destinationsLengthRef.current }, (_, i) => base + (i < remainder ? 1 : 0));
+        }
+        return prev;
+      });
     }
   }, [tripDays, destinations.length]);
 

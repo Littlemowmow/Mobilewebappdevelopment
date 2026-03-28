@@ -89,7 +89,7 @@ export function BlindMatch({ hideHeader }: { hideHeader?: boolean }) {
     }));
     if (votes.length > 0) {
       await supabase.from("blind_match_votes").upsert(votes, { onConflict: "trip_id,activity_id,user_id" }).then(({ error }) => {
-        if (error) console.warn("Failed to save votes:", error.message);
+        if (error && import.meta.env.DEV) console.warn("Failed to save votes:", error.message);
       });
     }
   }, [user, activeTrip, itemVotes]);

@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, ReactNode } from "react";
 import { useTrip } from "./TripContext";
 
 interface Transaction {
@@ -47,11 +47,21 @@ function createEmptyBudget(cities: { name: string; flag: string }[], tripBudget:
 export function BudgetProvider({ children }: { children: ReactNode }) {
   const { activeTrip } = useTrip();
 
+  // Stabilize cities dep: only recompute when the serialized city list changes
+  const citiesKey = activeTrip?.cities.map(c => `${c.name}|${c.flag}`).join(",") ?? "";
+  const citiesRef = useRef(activeTrip?.cities ?? []);
+  const prevCitiesKey = useRef(citiesKey);
+  if (citiesKey !== prevCitiesKey.current) {
+    citiesRef.current = activeTrip?.cities ?? [];
+    prevCitiesKey.current = citiesKey;
+  }
+
+  const tripBudget = activeTrip?.budget || activeTrip?.metadata?.personal_budget || 0;
+
   const budgetData = useMemo(() => {
     if (!activeTrip) return createEmptyBudget([]);
-    const tripBudget = activeTrip.budget || activeTrip.metadata?.personal_budget || 0;
-    return createEmptyBudget(activeTrip.cities, tripBudget);
-  }, [activeTrip?.id, activeTrip?.cities]);
+    return createEmptyBudget(citiesRef.current, tripBudget);
+  }, [activeTrip?.id, citiesKey, tripBudget]);
 
   return (
     <BudgetContext.Provider value={{ budgetData }}>

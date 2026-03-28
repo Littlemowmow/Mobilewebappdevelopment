@@ -69,7 +69,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
       .eq("trip_id", String(activeTrip.id))
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
-        if (error) console.warn("Failed to load expenses:", error.message);
+        if (error && import.meta.env.DEV) console.warn("Failed to load expenses:", error.message);
         if (data) {
           setLocalExpenses(data.map((e: Record<string, unknown>) => ({
             id: e.id as number,
@@ -429,7 +429,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
         owe_members: formOweMembers.length > 0 ? [...formOweMembers] : [],
       };
       supabase.from("trip_expenses").insert(row).then(({ error }) => {
-        if (error) console.warn("Failed to save expense:", error.message);
+        if (error && import.meta.env.DEV) console.warn("Failed to save expense:", error.message);
       });
     }
 
@@ -643,7 +643,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
                               category: reqCategory,
                               description: reqDescription.trim(),
                             }).then(({ error }) => {
-                              if (error) console.warn("Failed to save required expense:", error.message);
+                              if (error && import.meta.env.DEV) console.warn("Failed to save required expense:", error.message);
                             });
                           }
                           setShowAddRequired(false);

@@ -11,27 +11,33 @@ import { JoinTrip } from "./components/JoinTrip";
 import { TripSetup } from "./components/TripSetup";
 import { Privacy } from "./components/Privacy";
 import { Terms } from "./components/Terms";
+import { RouteErrorFallback } from "./components/ErrorBoundary";
 
 export const router = createBrowserRouter([
   {
     path: "/login",
     Component: Login,
+    errorElement: <RouteErrorFallback />,
   },
   {
     path: "/privacy",
     Component: Privacy,
+    errorElement: <RouteErrorFallback />,
   },
   {
     path: "/terms",
     Component: Terms,
+    errorElement: <RouteErrorFallback />,
   },
   {
     path: "/join/:code",
     Component: JoinTrip,
+    errorElement: <RouteErrorFallback />,
   },
   {
     path: "/",
     Component: Root,
+    errorElement: <RouteErrorFallback />,
     children: [
       { index: true, Component: Discover },
       { path: "trips", Component: Trips },

@@ -217,48 +217,40 @@ export function TripProvider({ children }: { children: ReactNode }) {
         duration: activity.duration,
         status: "pending",
       }).then(({ error }) => {
-        if (error) console.warn("Failed to persist proposal:", error.message);
+        if (error && import.meta.env.DEV) console.warn("Failed to persist proposal:", error.message);
       });
     }
   }, [activeTrip, user]);
 
   const approveActivity = useCallback((id: number) => {
-    setProposedActivities((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "approved" as const } : a))
-    );
-    // Persist status to Supabase
-    if (activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-")) {
-      const activity = proposedActivities.find((a) => a.id === id);
-      if (activity) {
+    setProposedActivities((prev) => {
+      const activity = prev.find((a) => a.id === id);
+      // Persist status to Supabase using the fresh value from the updater
+      if (activity && activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-")) {
         supabase.from("proposed_activities")
           .update({ status: "approved" })
           .eq("trip_id", activeTrip.id)
           .eq("name", activity.name)
-          .then(({ error }) => {
-            if (error) console.warn("Failed to approve in DB:", error.message);
-          });
+          .then(() => {});
       }
-    }
-  }, [activeTrip, proposedActivities]);
+      return prev.map((a) => (a.id === id ? { ...a, status: "approved" as const } : a));
+    });
+  }, [activeTrip]);
 
   const rejectActivity = useCallback((id: number) => {
-    setProposedActivities((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "rejected" as const } : a))
-    );
-    // Persist status to Supabase
-    if (activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-")) {
-      const activity = proposedActivities.find((a) => a.id === id);
-      if (activity) {
+    setProposedActivities((prev) => {
+      const activity = prev.find((a) => a.id === id);
+      // Persist status to Supabase using the fresh value from the updater
+      if (activity && activeTrip && typeof activeTrip.id === "string" && activeTrip.id.includes("-")) {
         supabase.from("proposed_activities")
           .update({ status: "rejected" })
           .eq("trip_id", activeTrip.id)
           .eq("name", activity.name)
-          .then(({ error }) => {
-            if (error) console.warn("Failed to reject in DB:", error.message);
-          });
+          .then(() => {});
       }
-    }
-  }, [activeTrip, proposedActivities]);
+      return prev.map((a) => (a.id === id ? { ...a, status: "rejected" as const } : a));
+    });
+  }, [activeTrip]);
 
   const approvedActivities = proposedActivities.filter((a) => a.status === "approved");
 
@@ -298,7 +290,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         role: "member",
         metadata: { name, emoji: emoji || null },
       }).then(({ error }) => {
-        if (error) console.warn('Operation failed:', error.message);
+        if (error && import.meta.env.DEV) console.warn('Operation failed:', error.message);
       });
     }
   }, []);
@@ -339,7 +331,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     });
     if (typeof tripId === "string" && tripId.includes("-")) {
       supabase.from("trips").update({ status: status.toLowerCase() }).eq("id", tripId).then(({ error }) => {
-        if (error) console.warn('Operation failed:', error.message);
+        if (error && import.meta.env.DEV) console.warn('Operation failed:', error.message);
       });
     }
   }, []);
@@ -471,7 +463,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         ownerInitial,
       )));
     } else if (ownedError) {
-      console.error("Failed to load trips:", ownedError);
+      if (import.meta.env.DEV) console.error("Failed to load trips:", ownedError);
     }
     setLoading(false);
   }, [user]);
@@ -567,7 +559,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       }).select().single();
 
       if (error) {
-        console.error("Create trip error:", error);
+        if (import.meta.env.DEV) console.error("Create trip error:", error);
         const localId = Date.now();
         const localTrip = mapSupabaseTripToTrip({
           id: localId,
@@ -632,7 +624,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
         if (requiredExpenses.length > 0) {
           supabase.from("trip_required_expenses").insert(requiredExpenses).then(({ error: reqErr }) => {
-            if (reqErr) console.warn("Failed to save required expenses:", reqErr.message);
+            if (reqErr && import.meta.env.DEV) console.warn("Failed to save required expenses:", reqErr.message);
           });
         }
 

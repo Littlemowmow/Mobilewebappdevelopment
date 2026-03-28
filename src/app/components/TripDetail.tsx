@@ -35,12 +35,13 @@ export function TripDetail() {
   const trip = trips.find(t => String(t.id) === String(tripId));
   const isSolo = trip ? trip.members <= 1 : false;
 
-  // Set this as active trip when viewing
+  // Set this as active trip when viewing — compare by ID only to avoid infinite loops
   useEffect(() => {
-    if (trip && (!activeTrip || activeTrip.id !== trip.id)) {
+    if (trip && (!activeTrip || String(activeTrip.id) !== String(trip.id))) {
       setActiveTrip(trip);
     }
-  }, [trip, activeTrip, setActiveTrip]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.id, activeTrip?.id, setActiveTrip]);
 
   if (!trip) {
     return (

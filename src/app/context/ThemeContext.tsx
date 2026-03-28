@@ -11,8 +11,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem("weventr-theme");
-    return (saved as Theme) || "dark";
+    try {
+      const saved = localStorage.getItem("weventr-theme");
+      return (saved as Theme) || "dark";
+    } catch {
+      return "dark";
+    }
   });
 
   useEffect(() => {
@@ -22,7 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } else {
       root.classList.remove("dark");
     }
-    localStorage.setItem("weventr-theme", theme);
+    try { localStorage.setItem("weventr-theme", theme); } catch {}
   }, [theme]);
 
   const toggleTheme = () => {

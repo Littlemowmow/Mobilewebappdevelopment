@@ -164,7 +164,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
           setAddedActivities(grouped);
         }
       });
-  }, [activeTrip?.id, user]);
+  }, [activeTrip?.id, user?.id]);
 
   const resetForm = () => {
     setFormTitle("");
@@ -217,7 +217,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
         .from("schedule_activities")
         .insert(row)
         .then(({ error }) => {
-          if (error) console.warn("Failed to save activity:", error.message);
+          if (error && import.meta.env.DEV) console.warn("Failed to save activity:", error.message);
         });
     }
 
@@ -237,7 +237,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
         .delete()
         .eq("id", activityId)
         .then(({ error }) => {
-          if (error) console.warn("Failed to delete activity:", error.message);
+          if (error && import.meta.env.DEV) console.warn("Failed to delete activity:", error.message);
         });
     }
   };
@@ -480,7 +480,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
                         badge: "DISCOVER",
                         notes: activity.location || activity.city,
                       }).then(({ error }) => {
-                        if (error) console.warn("Failed to save:", error.message);
+                        if (error && import.meta.env.DEV) console.warn("Failed to save:", error.message);
                       });
                     }
                   }}

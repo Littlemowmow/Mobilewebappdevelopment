@@ -12,7 +12,7 @@ export function Root() {
   const { activeTrip, trips, loading: tripsLoading } = useTrip();
   const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(
-    () => !localStorage.getItem("weventr-onboarding-done")
+    () => { try { return !localStorage.getItem("weventr-onboarding-done"); } catch { return true; } }
   );
 
   if (loading) {
@@ -31,10 +31,10 @@ export function Root() {
     return (
       <OnboardingFlow
         onComplete={() => {
-          localStorage.setItem("weventr-onboarding-done", "true");
+          try { localStorage.setItem("weventr-onboarding-done", "true"); } catch {}
           setShowOnboarding(false);
           if (user) {
-            supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id);
+            supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id).then(() => {});
           }
           if (!tripsLoading && trips.length === 0) {
             navigate("/trips/new");

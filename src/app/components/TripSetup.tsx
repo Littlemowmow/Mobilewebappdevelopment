@@ -123,9 +123,12 @@ export function TripSetup() {
         hotel_cost_per_night: hotelCostPerNight ? parseFloat(hotelCostPerNight) : null,
         personal_budget: budgetInput ? parseFloat(budgetInput) : null,
       };
-      // Try to save — if metadata column exists, great; if not, silently continue
+      // Try to save — if metadata column exists, great; if not, continue
       if (typeof tripId === "string" && tripId.includes("-")) {
-        await supabase.from("trips").update({ metadata: setupData }).eq("id", tripId).then(() => {});
+        const { error: saveError } = await supabase.from("trips").update({ metadata: setupData }).eq("id", tripId);
+        if (saveError && import.meta.env.DEV) {
+          console.warn("Failed to save trip setup:", saveError.message);
+        }
       }
       navigate(`/trips/${tripId}`);
     } else {

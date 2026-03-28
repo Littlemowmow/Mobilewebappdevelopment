@@ -18,6 +18,7 @@ export function Profile() {
   const [editName, setEditName] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +45,7 @@ export function Profile() {
     if (!file || !user?.id) return;
 
     setAvatarUploading(true);
+    setAvatarError("");
     try {
       const filePath = `${user.id}/${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
@@ -51,7 +53,7 @@ export function Profile() {
         .upload(filePath, file);
 
       if (uploadError) {
-        console.error('Avatar upload error:', uploadError);
+        setAvatarError("Failed to upload photo. Please try again.");
         return;
       }
 
@@ -61,17 +63,21 @@ export function Profile() {
 
       const publicUrl = publicUrlData.publicUrl;
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
         .eq('id', user.id);
 
+      if (updateError) {
+        setAvatarError("Photo uploaded but failed to save. Please try again.");
+        return;
+      }
+
       setLocalAvatarUrl(publicUrl);
-    } catch (err) {
-      console.error('Avatar upload failed:', err);
+    } catch {
+      setAvatarError("Upload failed. Please try again.");
     } finally {
       setAvatarUploading(false);
-      // Reset file input so the same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -188,6 +194,7 @@ export function Profile() {
             <h2 className="text-xl mb-0.5 font-semibold text-zinc-900 dark:text-white">{displayName}</h2>
           )}
           <p className="text-zinc-500 dark:text-zinc-400 text-[13px] font-medium">{displayEmail}</p>
+          {avatarError && <p className="text-red-500 text-xs mt-1">{avatarError}</p>}
         </div>
         {!isEditing && (
           <button onClick={handleEditStart} className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors border border-zinc-200/50 dark:border-transparent">

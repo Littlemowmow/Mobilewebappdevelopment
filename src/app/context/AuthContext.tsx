@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data) {
       setProfile(data)
     } else if (error) {
-      console.warn("Failed to load profile:", error.message)
+      if (import.meta.env.DEV) console.warn("Failed to load profile:", error.message)
       // Set a fallback profile so the app remains functional
       setProfile({
         id: userId,
@@ -95,13 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     setLoading(true)
-    // Safety: never let loading hang more than 8s
     const safetyTimeout = setTimeout(() => setLoading(false), 8000)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      clearTimeout(safetyTimeout)
-      setLoading(false)
-    }
+    clearTimeout(safetyTimeout)
+    setLoading(false)
     return { error: error?.message ?? null }
   }
 

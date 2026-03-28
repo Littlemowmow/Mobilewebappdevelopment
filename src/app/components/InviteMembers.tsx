@@ -29,8 +29,20 @@ export function InviteMembers() {
 
   const inviteLink = `${window.location.origin}/join/${trip.code}`;
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(inviteLink);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+    } catch {
+      // Fallback for insecure contexts
+      const textarea = document.createElement("textarea");
+      textarea.value = inviteLink;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
