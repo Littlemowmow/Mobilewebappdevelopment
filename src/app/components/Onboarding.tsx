@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { motion, AnimatePresence, type PanInfo } from "motion/react";
+import { motion } from "motion/react";
 import { Compass, Plane, Calendar, ThumbsUp, ThumbsDown, Users, GripVertical, DollarSign } from "lucide-react";
 
 const STEPS = [
@@ -37,28 +37,11 @@ const STEPS = [
   },
 ];
 
-const variants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 300 : -300,
-    opacity: 0,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? 300 : -300,
-    opacity: 0,
-  }),
-};
-
 export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(1);
 
   const goNext = useCallback(() => {
     if (step < STEPS.length - 1) {
-      setDirection(1);
       setStep((s) => s + 1);
     } else {
       onComplete();
@@ -67,15 +50,9 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
 
   const goPrev = useCallback(() => {
     if (step > 0) {
-      setDirection(-1);
       setStep((s) => s - 1);
     }
   }, [step]);
-
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    if (info.offset.x < -50) goNext();
-    else if (info.offset.x > 50) goPrev();
-  };
 
   const current = STEPS[step];
   const Icon = current.icon;
@@ -94,29 +71,31 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 overflow-hidden">
-        <AnimatePresence mode="wait" custom={direction}>
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-8"
+        onTouchStart={(e) => { (e.currentTarget as any)._touchX = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          const startX = (e.currentTarget as any)._touchX;
+          if (startX == null) return;
+          const diff = e.changedTouches[0].clientX - startX;
+          if (diff < -50) goNext();
+          else if (diff > 50) goPrev();
+        }}
+      >
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col items-center text-center w-full max-w-sm"
+        >
+          {/* Illustration */}
           <motion.div
-            key={step}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
-            onDragEnd={handleDragEnd}
-            className="flex flex-col items-center text-center w-full max-w-sm"
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            className={`w-28 h-28 rounded-[32px] bg-gradient-to-br ${current.iconBg} flex items-center justify-center mb-8 shadow-2xl`}
           >
-            {/* Illustration */}
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.15, type: "spring", stiffness: 200, damping: 20 }}
-              className={`w-28 h-28 rounded-[32px] bg-gradient-to-br ${current.iconBg} flex items-center justify-center mb-8 shadow-2xl`}
-            >
               {step === 0 && (
                 <motion.div
                   animate={{ rotate: [0, 12, -12, 0] }}
@@ -181,7 +160,6 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
               {current.hint}
             </p>
           </motion.div>
-        </AnimatePresence>
       </div>
 
       {/* Bottom: dots + button */}
