@@ -90,6 +90,7 @@ export function NewTrip() {
   const [hotelTotal, setHotelTotal] = useState("");
   const [hotelNights, setHotelNights] = useState("");
   const [flightCost, setFlightCost] = useState("");
+  const [datesTBD, setDatesTBD] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createError, setCreateError] = useState("");
   const { createTrip } = useTrip();
@@ -195,6 +196,7 @@ export function NewTrip() {
       hotel_total: hotelTotal ? parseFloat(hotelTotal) : undefined,
       hotel_nights: hotelNights ? parseInt(hotelNights) : undefined,
       flight_cost: flightCost ? parseFloat(flightCost) : undefined,
+      dates_tbd: datesTBD,
     });
     setSubmitting(false);
     if (error) {
@@ -231,41 +233,64 @@ export function NewTrip() {
       </div>
 
       {/* Dates */}
-      <div className="grid grid-cols-2 gap-3 mb-1">
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Start Date (optional)</label>
-          <input
-            type="date"
-            value={startDate}
-            min={new Date().toISOString().split("T")[0]}
-            onChange={(e) => setStartDate(e.target.value)}
-            aria-label="Trip start date"
-            className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-4 text-[15px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none"
-          />
+      <div className="mb-5">
+        <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Dates</label>
+        {/* Date Mode Toggle */}
+        <div className="flex gap-2 mb-3">
+          <button type="button" onClick={() => setDatesTBD(false)}
+            className={`flex-1 py-2.5 rounded-2xl text-[14px] font-semibold transition-all ${!datesTBD ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md" : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800"}`}>
+            Set Dates
+          </button>
+          <button type="button" onClick={() => setDatesTBD(true)}
+            className={`flex-1 py-2.5 rounded-2xl text-[14px] font-semibold transition-all ${datesTBD ? "bg-zinc-900 dark:bg-white text-white dark:text-black shadow-md" : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800"}`}>
+            Dates TBD
+          </button>
         </div>
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">End Date (optional)</label>
-          <input
-            type="date"
-            value={endDate}
-            min={startDate || new Date().toISOString().split("T")[0]}
-            onChange={(e) => setEndDate(e.target.value)}
-            aria-label="Trip end date"
-            className={`w-full bg-white dark:bg-zinc-950 border rounded-2xl px-4 py-4 text-[15px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none ${
-              startDate && endDate && endDate <= startDate
-                ? "border-red-400 dark:border-red-600"
-                : "border-zinc-200 dark:border-zinc-800"
-            }`}
-          />
-        </div>
+
+        {datesTBD ? (
+          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/50 rounded-2xl p-4 text-center">
+            <p className="text-[15px] text-orange-700 dark:text-orange-300 font-medium">Members will vote on dates after joining</p>
+            <p className="text-xs text-orange-500 dark:text-orange-400 mt-1">Everyone submits their availability, and the app finds the best overlap</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3 mb-1">
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">Start Date (optional)</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  aria-label="Trip start date"
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 py-4 text-[15px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">End Date (optional)</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  aria-label="Trip end date"
+                  className={`w-full bg-white dark:bg-zinc-950 border rounded-2xl px-4 py-4 text-[15px] text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm dark:shadow-none ${
+                    startDate && endDate && endDate <= startDate
+                      ? "border-red-400 dark:border-red-600"
+                      : "border-zinc-200 dark:border-zinc-800"
+                  }`}
+                />
+              </div>
+            </div>
+            {startDate && endDate && endDate <= startDate && (
+              <p className="text-red-500 text-sm font-medium mb-4 px-1" role="alert">End date must be after start date</p>
+            )}
+            {startDate && startDate < new Date().toISOString().split("T")[0] && (
+              <p className="text-red-500 text-sm font-medium mb-4 px-1" role="alert">Start date cannot be in the past</p>
+            )}
+          </>
+        )}
       </div>
-      {startDate && endDate && endDate <= startDate && (
-        <p className="text-red-500 text-sm font-medium mb-4 px-1" role="alert">End date must be after start date</p>
-      )}
-      {startDate && startDate < new Date().toISOString().split("T")[0] && (
-        <p className="text-red-500 text-sm font-medium mb-4 px-1" role="alert">Start date cannot be in the past</p>
-      )}
-      {!(startDate && endDate && endDate <= startDate) && <div className="mb-5" />}
 
       {/* Destinations */}
       <div className="mb-5">

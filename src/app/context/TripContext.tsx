@@ -55,6 +55,7 @@ interface Trip {
     hotel_sorted?: string;
     hotel_cost_per_night?: number;
     personal_budget?: number;
+    dates_tbd?: boolean;
   };
 }
 
@@ -85,6 +86,7 @@ interface CreateTripData {
   hotel_total?: number;
   hotel_nights?: number;
   flight_cost?: number;
+  dates_tbd?: boolean;
 }
 
 interface TripContextType {
@@ -566,6 +568,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
           hotel_total: data.hotel_total || null,
           hotel_nights: data.hotel_nights || null,
           flight_cost: data.flight_cost || null,
+          dates_tbd: data.dates_tbd || false,
         },
       }).select().single();
 

@@ -3,9 +3,11 @@ import { Link, useParams, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
 import { useState, useEffect } from "react";
 import { sendTripInvite } from "../../lib/sms";
+import { supabase } from "../../lib/supabase";
 import { Schedule } from "./Schedule";
 import { Budget } from "./Budget";
 import { BlindMatch } from "./BlindMatch";
+import { DatePoll } from "./DatePoll";
 
 const MEMBER_COLOR_OPTIONS = [
   { label: "Orange", value: "bg-orange-500" },
@@ -34,6 +36,31 @@ export function TripDetail() {
 
   const trip = trips.find(t => String(t.id) === String(tripId));
   const isSolo = trip ? trip.members <= 1 : false;
+  const isDatesTBD = !!(trip?.metadata as Record<string, unknown>)?.dates_tbd;
+
+  const handleSetFinalDates = async (start: string, end: string) => {
+    if (!trip) return;
+    // Update the trip's start_date, end_date in Supabase and clear dates_tbd
+    const tripIdStr = String(trip.id);
+    if (tripIdStr.includes("-")) {
+      const { data: currentTrip } = await supabase
+        .from("trips")
+        .select("metadata")
+        .eq("id", tripIdStr)
+        .single();
+      const existingMeta = (currentTrip?.metadata as Record<string, unknown>) || {};
+      await supabase
+        .from("trips")
+        .update({
+          start_date: start,
+          end_date: end,
+          metadata: { ...existingMeta, dates_tbd: false },
+        })
+        .eq("id", tripIdStr);
+      // Reload to reflect changes
+      window.location.reload();
+    }
+  };
 
   // Set this as active trip when viewing — compare by ID only to avoid infinite loops
   useEffect(() => {
@@ -82,7 +109,7 @@ export function TripDetail() {
 
         <div className="mb-4">
           <p className="text-orange-50 text-[15px] font-medium mb-1">
-            {trip.dates} · {trip.duration}
+            {isDatesTBD ? "Dates TBD — Vote below" : `${trip.dates} · ${trip.duration}`}
           </p>
           <button
             onClick={() => {
@@ -181,6 +208,20 @@ export function TripDetail() {
           )}
         </div>
       </div>
+
+      {/* Date Poll — shown when dates are TBD */}
+      {isDatesTBD && typeof trip.id === "string" && (
+        <DatePoll
+          tripId={String(trip.id)}
+          members={trip.memberInitials.map((initial, i) => ({
+            initial,
+            color: trip.memberColors[i] || "bg-zinc-500",
+            name: initial,
+          }))}
+          onSetFinalDates={handleSetFinalDates}
+          isCreator={true}
+        />
+      )}
 
       {/* Tabs */}
       <div className="sticky top-0 z-10 bg-zinc-50 dark:bg-black px-5 pt-4 pb-3 border-b border-zinc-200/60 dark:border-zinc-700/50">

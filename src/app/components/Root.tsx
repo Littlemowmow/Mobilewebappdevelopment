@@ -5,13 +5,16 @@ import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { OnboardingFlow } from "./Onboarding";
+import { TripChat } from "./TripChat";
 import { trackEvent } from "../../lib/analytics";
+import { Sparkles } from "lucide-react";
 
 export function Root() {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeTrip, trips, loading: tripsLoading } = useTrip();
   const { user, loading } = useAuth();
+  const [showChat, setShowChat] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(
     () => { try { return !localStorage.getItem("weventr-onboarding-done"); } catch { return true; } }
   );
@@ -63,6 +66,18 @@ export function Root() {
       <main className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto">
         <Outlet />
       </main>
+
+      {/* AI Chat FAB */}
+      <button
+        onClick={() => setShowChat(true)}
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-4 w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30 hover:scale-105 active:scale-95 transition-transform z-40"
+        aria-label="AI Trip Assistant"
+      >
+        <Sparkles className="w-5 h-5 text-white" />
+      </button>
+
+      {/* AI Chat Modal */}
+      {showChat && <TripChat onClose={() => setShowChat(false)} />}
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-zinc-900/85 border-t border-zinc-200/50 dark:border-zinc-700/40 backdrop-blur-2xl backdrop-saturate-[1.8] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_40px_rgba(0,0,0,0.6)] pb-[env(safe-area-inset-bottom,0px)]">
