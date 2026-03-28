@@ -49,11 +49,11 @@ export function Login() {
 
     if (result.error) {
       setError(mapAuthError(result.error))
-      setLoading(false)
     } else {
       // Success — navigate to app. Auth context will have the session.
       navigate("/")
     }
+    setLoading(false)
   }
 
   const handleResetPassword = async () => {

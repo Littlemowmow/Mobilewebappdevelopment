@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, MapPin, Users, Minus, X, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Users, Minus, X, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useTrip } from "../context/TripContext";

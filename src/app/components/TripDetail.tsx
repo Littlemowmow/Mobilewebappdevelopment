@@ -1,4 +1,4 @@
-import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send, Copy, Share2, Loader2 } from "lucide-react";
+import { ArrowLeft, Users, Bookmark, MapPin, DollarSign, Calendar, Vote, Plus, X, Check, Send } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router";
 import { useTrip } from "../context/TripContext";
 import { useState, useEffect } from "react";
@@ -30,7 +30,7 @@ export function TripDetail() {
   const [codeCopied, setCodeCopied] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [showStatusConfirm, setShowStatusConfirm] = useState(false);
-  const [pendingStatus, setPendingStatus] = useState<string>("");
+  const [pendingStatus, setPendingStatus] = useState<"Active" | "Completed">("Active");
 
   const trip = trips.find(t => String(t.id) === String(tripId));
   const isSolo = trip ? trip.members <= 1 : false;

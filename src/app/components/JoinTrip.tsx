@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../context/AuthContext";
-import { Globe, Loader2, User } from "lucide-react";
+import { Globe, Loader2, Plane, User } from "lucide-react";
 
 const emojiOptions = ["😎", "🤠", "🥳", "😈", "🦊", "🐸", "🌸", "⚡", "🔥", "💎", "🎯", "🌊", "🍕", "✈️", "🎒", "🗺️", "🌴", "🎭", "🎵", "🏔️"];
 
@@ -76,7 +76,25 @@ export function JoinTrip() {
 
     // Add as member if logged in — save all travel details
     if (user) {
-      await supabase.from("trip_members").insert({
+      // Check if already a member or the owner
+      if (trip.owner_id === user.id) {
+        setTripName(trip.title);
+        setStep("done");
+        return;
+      }
+      const { data: existingMember } = await supabase
+        .from("trip_members")
+        .select("id")
+        .eq("trip_id", trip.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (existingMember) {
+        setTripName(trip.title);
+        setStep("done");
+        return;
+      }
+
+      const { error: joinErr } = await supabase.from("trip_members").insert({
         trip_id: trip.id,
         user_id: user.id,
         role: "member",
@@ -93,6 +111,12 @@ export function JoinTrip() {
           flight_cost: flightCost ? parseFloat(flightCost) : null,
         },
       });
+
+      if (joinErr) {
+        setError(joinErr.message.includes("duplicate") ? "You're already in this trip!" : joinErr.message);
+        setStep("profile");
+        return;
+      }
 
       // Update profile with name and phone if provided
       await supabase.from("profiles").update({
@@ -262,7 +286,7 @@ export function JoinTrip() {
         {/* Flight Info */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <Loader2 className="w-4 h-4 text-teal-500" style={{ animation: 'none' }} />
+            <Plane className="w-4 h-4 text-teal-500" />
             <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Your Flight Details</label>
             <span className="text-xs text-zinc-400 dark:text-zinc-500 font-normal">(optional)</span>
           </div>

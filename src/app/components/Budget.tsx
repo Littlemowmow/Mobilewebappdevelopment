@@ -55,8 +55,6 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
   const { user, profile } = useAuth();
   const isSolo = activeTrip ? activeTrip.members <= 1 : false;
   const [selectedCity, setSelectedCity] = useState("All");
-  const [dismissedSettlements, setDismissedSettlements] = useState<number[]>([]);
-  const isSoloInit = activeTrip ? activeTrip.members <= 1 : false;
   const [activeSubTab, setActiveSubTab] = useState<"fund" | "budget" | "settle">("fund");
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [localExpenses, setLocalExpenses] = useState<LocalExpense[]>([]);
@@ -350,7 +348,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
     }
 
     return settlements;
-  }, [allTransactions]);
+  }, [allTransactions, MEMBERS]);
 
   if (!activeTrip) {
     return (

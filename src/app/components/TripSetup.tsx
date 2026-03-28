@@ -249,7 +249,7 @@ export function TripSetup() {
             <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-1.5">per night, total (we'll split per person)</p>
             {trip && (
               <p className="text-center text-xs text-orange-500 font-medium mt-2">
-                {trip.duration} = ~${hotelCostPerNight ? (parseFloat(hotelCostPerNight) * parseInt(trip.duration)).toLocaleString() : '0'} total
+                {trip.duration} = ~${hotelCostPerNight ? (parseFloat(hotelCostPerNight) * (parseInt(trip.duration) || 1)).toLocaleString() : '0'} total
               </p>
             )}
           </div>

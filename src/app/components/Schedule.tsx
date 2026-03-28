@@ -1,4 +1,4 @@
-import { Plane, Home, Landmark, ChevronRight, Clock, ArrowLeft, Camera, Utensils, Music, ShoppingBag, Coffee, X, MapPin, GripVertical } from "lucide-react";
+import { Landmark, ChevronRight, Clock, ArrowLeft, Camera, Coffee, X, MapPin, GripVertical } from "lucide-react";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -475,7 +475,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
                         time: "TBD",
                         duration: activity.duration || "",
                         price: activity.price || "",
-                        city: currentCity.name,
+                        city: selectedCity,
                         day: selectedDay,
                         badge: "DISCOVER",
                         notes: activity.location || activity.city,

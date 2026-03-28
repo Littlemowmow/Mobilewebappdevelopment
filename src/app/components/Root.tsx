@@ -9,7 +9,7 @@ import { OnboardingFlow } from "./Onboarding";
 export function Root() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { activeTrip, trips } = useTrip();
+  const { activeTrip, trips, loading: tripsLoading } = useTrip();
   const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem("weventr-onboarding-done")
@@ -36,7 +36,7 @@ export function Root() {
           if (user) {
             supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id);
           }
-          if (trips.length === 0) {
+          if (!tripsLoading && trips.length === 0) {
             navigate("/trips/new");
           }
         }}

@@ -560,8 +560,7 @@ export function Discover() {
       const score = calcIntensityScore(intensityAtSwipe);
 
       if (direction === "right" && currentPlace) {
-        const cityParts = currentPlace.location.split(", ");
-        const city = cityParts[cityParts.length - 1] || "";
+        const city = currentPlace.city || currentPlace.location.split(",")[0].trim() || currentPlace.location;
         saveActivity(currentPlace.id, score, city);
         // If there's an active trip, propose this activity for group voting
         if (activeTrip) {
@@ -569,7 +568,7 @@ export function Discover() {
             id: Date.now() + Math.floor(Math.random() * 10000),
             name: currentPlace.name,
             location: currentPlace.location,
-            city,
+            city: city,
             description: currentPlace.description,
             tags: currentPlace.tags,
             price: currentPlace.price,
@@ -1049,12 +1048,16 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
 
           {/* Tags */}
           <div className="absolute top-5 left-5 right-5 flex justify-between">
-            <span className="bg-orange-600 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md shadow-lg">
-              {place.tags[0]}
-            </span>
-            <span className="bg-white/95 text-black px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md shadow-lg">
-              {place.tags[1]}
-            </span>
+            {place.tags[0] && (
+              <span className="bg-orange-600 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md shadow-lg">
+                {place.tags[0]}
+              </span>
+            )}
+            {place.tags[1] && (
+              <span className="bg-white/95 text-black px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md shadow-lg">
+                {place.tags[1]}
+              </span>
+            )}
           </div>
 
           {/* Bottom overlay — name + location only, tap for details */}
