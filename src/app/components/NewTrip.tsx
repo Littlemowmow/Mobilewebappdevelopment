@@ -82,6 +82,7 @@ export function NewTrip() {
   const [groupSize, setGroupSize] = useState(1);
   const [budgetMode, setBudgetMode] = useState<"per-person" | "total">("per-person");
   const [tripVibe, setTripVibe] = useState<"luxury" | "modest" | "budget">("modest");
+  const [interests, setInterests] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [createError, setCreateError] = useState("");
   const { createTrip } = useTrip();
@@ -173,6 +174,7 @@ export function NewTrip() {
       trip_vibe: tripVibe,
       budget_mode: budgetMode,
       group_size: groupSize,
+      interests,
     });
     setSubmitting(false);
     if (error) {
@@ -464,6 +466,44 @@ export function NewTrip() {
           {tripVibe === "modest" && "Great food, comfortable stays, popular spots"}
           {tripVibe === "budget" && "Street food, hostels, free activities"}
         </p>
+      </div>
+
+      {/* Trip Interests */}
+      <div className="mb-8">
+        <label className="block text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">What are you into?</label>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3 ml-1">Pick as many as you want — we'll curate your itinerary</p>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { key: "food", label: "Foodie", emoji: "🍜" },
+            { key: "culture", label: "Culture", emoji: "🏛️" },
+            { key: "nightlife", label: "Nightlife", emoji: "🌙" },
+            { key: "nature", label: "Nature", emoji: "🌿" },
+            { key: "adventure", label: "Adventure", emoji: "🧗" },
+            { key: "shopping", label: "Shopping", emoji: "🛍️" },
+            { key: "history", label: "History", emoji: "📜" },
+            { key: "art", label: "Art", emoji: "🎨" },
+            { key: "wellness", label: "Wellness", emoji: "🧘" },
+            { key: "photo", label: "Photo Spots", emoji: "📸" },
+            { key: "local", label: "Local Gems", emoji: "💎" },
+            { key: "sports", label: "Sports", emoji: "⚽" },
+          ]).map((tag) => {
+            const selected = interests.includes(tag.key);
+            return (
+              <button
+                key={tag.key}
+                type="button"
+                onClick={() => setInterests(prev => selected ? prev.filter(i => i !== tag.key) : [...prev, tag.key])}
+                className={`px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all ${
+                  selected
+                    ? "bg-orange-500 text-white shadow-md shadow-orange-500/30"
+                    : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:border-orange-300 dark:hover:border-orange-700"
+                }`}
+              >
+                {tag.emoji} {tag.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Error Message */}

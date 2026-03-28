@@ -80,6 +80,7 @@ interface CreateTripData {
   trip_vibe?: string;
   budget_mode?: string;
   group_size?: number;
+  interests?: string[];
 }
 
 interface TripContextType {
@@ -555,6 +556,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
           trip_vibe: data.trip_vibe || null,
           budget_mode: data.budget_mode || null,
           group_size: data.group_size || null,
+          interests: data.interests || [],
         },
       }).select().single();
 
