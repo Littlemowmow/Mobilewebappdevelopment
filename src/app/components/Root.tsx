@@ -1,12 +1,19 @@
-import { Outlet, Link, useLocation, Navigate } from "react-router";
+import { Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
 import { Compass, Plane, User, Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../../lib/supabase";
+import { OnboardingFlow } from "./Onboarding";
 
 export function Root() {
   const location = useLocation();
-  const { activeTrip } = useTrip();
+  const navigate = useNavigate();
+  const { activeTrip, trips } = useTrip();
   const { user, loading } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem("weventr-onboarding-done")
+  );
 
   if (loading) {
     return (
@@ -18,6 +25,23 @@ export function Root() {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (showOnboarding) {
+    return (
+      <OnboardingFlow
+        onComplete={() => {
+          localStorage.setItem("weventr-onboarding-done", "true");
+          setShowOnboarding(false);
+          if (user) {
+            supabase.from("profiles").update({ onboarding_completed: true }).eq("id", user.id);
+          }
+          if (trips.length === 0) {
+            navigate("/trips/new");
+          }
+        }}
+      />
+    );
   }
 
   const navItems = [
