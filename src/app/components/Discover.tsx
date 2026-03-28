@@ -612,10 +612,10 @@ export function Discover() {
   const remainingCards = filteredPlaces.length - currentIndex;
 
   return (
-    <div className="px-5 pt-4 pb-0 flex flex-col max-w-md mx-auto" style={{ height: 'calc(100dvh - 5rem)' }}>
+    <div className="px-5 pt-4 pb-0 flex flex-col max-w-md mx-auto" style={{ height: 'calc(100dvh - 4.5rem)' }}>
       {/* Header */}
       <div className="flex justify-between items-center mb-5 pt-1">
-        <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">Discover</h1>
+        <h1 className="text-[22px] tracking-tight text-zinc-900 dark:text-white">Discover</h1>
         <button
           onClick={() => setShowFilter(!showFilter)}
           className="relative w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-zinc-200/50 dark:border-zinc-700/50 hover:scale-105"
@@ -750,7 +750,7 @@ export function Discover() {
             {/* Background cards */}
             {currentIndex + 1 < filteredPlaces.length && (
               <div
-                className="absolute inset-0 rounded-[28px] bg-zinc-200 dark:bg-zinc-900/80"
+                className="absolute inset-0 rounded-[20px] bg-zinc-200 dark:bg-zinc-900/80"
                 style={{
                   transform: 'scale(0.95) translateY(8px)',
                   zIndex: 1,
@@ -759,7 +759,7 @@ export function Discover() {
             )}
             {currentIndex + 2 < filteredPlaces.length && (
               <div
-                className="absolute inset-0 rounded-[28px] bg-zinc-300/25 dark:bg-zinc-800/40"
+                className="absolute inset-0 rounded-[20px] bg-zinc-300/25 dark:bg-zinc-800/40"
                 style={{
                   transform: 'scale(0.90) translateY(16px)',
                   zIndex: 0,
@@ -871,7 +871,7 @@ export function Discover() {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowDetail(false)}>
           <div className="absolute inset-0 bg-black/60" />
           <div
-            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-[28px] max-h-[85dvh] overflow-y-auto shadow-2xl"
+            className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-[20px] max-h-[85dvh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
@@ -884,7 +884,7 @@ export function Discover() {
 
             {/* Image */}
             {currentPlace.image && (currentPlace.image.startsWith("http")) && (
-              <div className="h-52 w-full overflow-hidden rounded-t-[28px]">
+              <div className="h-52 w-full overflow-hidden rounded-t-[20px]">
                 <img src={currentPlace.image} alt={currentPlace.name} className="w-full h-full object-cover" />
               </div>
             )}
@@ -897,7 +897,7 @@ export function Discover() {
                 ))}
               </div>
 
-              <h2 className="text-[24px] font-semibold text-zinc-900 dark:text-white mb-2">{currentPlace.name}</h2>
+              <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white mb-2">{currentPlace.name}</h2>
 
               <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 mb-4">
                 <MapPin className="w-4 h-4" />
@@ -1006,7 +1006,7 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="h-full rounded-[28px] overflow-hidden bg-white dark:bg-zinc-900 shadow-2xl dark:shadow-[0_8px_50px_rgba(0,0,0,0.6)] border border-zinc-200/50 dark:border-zinc-700/40 flex flex-col">
+      <div className="h-full rounded-[20px] overflow-hidden bg-white dark:bg-zinc-900 shadow-2xl dark:shadow-[0_8px_50px_rgba(0,0,0,0.6)] border border-zinc-200/50 dark:border-zinc-700/40 flex flex-col">
         {/* Image */}
         <div className={`relative flex-1 min-h-0 bg-gradient-to-br ${!imageSrc ? noImageStyle.gradient : "from-orange-600 via-rose-500 to-amber-500"}`}>
           {!imageSrc && (
@@ -1015,7 +1015,7 @@ function SwipeCard({ place, onSwipe, intensity, onTap }: SwipeCardProps) {
                 <span className="text-[120px] opacity-20">{noImageStyle.emoji}</span>
               </div>
               <div className="relative z-10 text-center px-8">
-                <h2 className="text-white text-[28px] font-bold leading-tight drop-shadow-lg">{place.name}</h2>
+                <h2 className="text-white text-[20px] font-bold leading-tight drop-shadow-lg">{place.name}</h2>
               </div>
             </div>
           )}

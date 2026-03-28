@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 
 function TripCardSkeleton() {
   return (
-    <div className="w-full rounded-[28px] overflow-hidden shadow-xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] border border-zinc-200/50 dark:border-zinc-700/30 mb-5 animate-pulse">
+    <div className="w-full rounded-[20px] overflow-hidden shadow-xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] border border-zinc-200/50 dark:border-zinc-700/30 mb-5 animate-pulse">
       <div className="bg-gradient-to-br from-zinc-300 to-zinc-200 dark:from-zinc-700 dark:to-zinc-800 p-6 h-[100px]" />
       <div className="bg-white dark:bg-zinc-900 p-6 space-y-4">
         <div className="flex items-center justify-between">
@@ -89,8 +89,8 @@ export function Trips() {
   return (
     <div className="px-5 py-4 max-w-md mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6 pt-1">
-        <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">My Trips</h1>
+      <div className="flex justify-between items-center mb-4 pt-1">
+        <h1 className="text-[22px] tracking-tight text-zinc-900 dark:text-white">My Trips</h1>
         <Link
           to="/trips/new"
           aria-label="Create new trip"
@@ -148,14 +148,14 @@ export function Trips() {
             <button
               key={trip.id}
               onClick={() => handleTripClick(trip)}
-              className="w-full rounded-[28px] overflow-hidden shadow-xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] border border-zinc-200/50 dark:border-zinc-700/30 mb-5 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full rounded-[20px] overflow-hidden shadow-xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] border border-zinc-200/50 dark:border-zinc-700/30 mb-5 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
             >
               {/* Header */}
               <div className="bg-gradient-to-br from-orange-600 via-orange-500 to-amber-500 p-6 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.4) 0%, transparent 50%)'}} />
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h2 className="text-[24px] mb-1.5 font-semibold tracking-tight text-white">{trip.name}</h2>
+                    <h2 className="text-[18px] mb-1.5 font-semibold tracking-tight text-white">{trip.name}</h2>
                     <p className="text-orange-50 text-[15px] font-medium">
                       {trip.dates} · {trip.duration}
                     </p>
@@ -285,7 +285,7 @@ export function Trips() {
       {/* Plan New Trip */}
       <Link 
         to="/trips/new"
-        className="block bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-900/80 border-2 border-zinc-200 dark:border-zinc-700/50 border-dashed rounded-[28px] p-10 text-center hover:border-orange-300 dark:hover:border-orange-700/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all duration-200 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]"
+        className="block bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-900/80 border-2 border-zinc-200 dark:border-zinc-700/50 border-dashed rounded-[20px] p-10 text-center hover:border-orange-300 dark:hover:border-orange-700/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all duration-200 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]"
       >
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center">

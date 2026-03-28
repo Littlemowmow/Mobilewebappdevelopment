@@ -76,7 +76,7 @@ export function TripDetail() {
           >
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
-          <h1 className="text-[24px] tracking-tight text-white font-semibold">{trip.name}</h1>
+          <h1 className="text-[20px] tracking-tight text-white font-semibold">{trip.name}</h1>
         </div>
 
         <div className="mb-4">
@@ -269,7 +269,7 @@ export function TripDetail() {
             className="absolute inset-0 bg-black/60"
             onClick={() => setShowAddMember(false)}
           />
-          <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-t-[28px] p-6 animate-in slide-in-from-bottom duration-300">
+          <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-t-[20px] p-6 animate-in slide-in-from-bottom duration-300">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">Add Member</h2>

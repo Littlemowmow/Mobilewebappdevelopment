@@ -396,7 +396,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
         >
           <ArrowLeft className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
         </button>
-        <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">{activeTrip.name}</h1>
+        <h1 className="text-[22px] tracking-tight text-zinc-900 dark:text-white">{activeTrip.name}</h1>
       </div>
       )}
 
@@ -442,7 +442,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
       {activeSubTab === "fund" && !isSolo && (
         <>
           {/* Lock Status Card */}
-          <div className={`rounded-[28px] p-8 mb-5 shadow-lg border ${allCommitted ? "bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/40 dark:to-teal-900/20 border-teal-200/50 dark:border-teal-800/50" : "bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 border-zinc-200/50 dark:border-zinc-800"}`}>
+          <div className={`rounded-[20px] p-8 mb-5 shadow-lg border ${allCommitted ? "bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/40 dark:to-teal-900/20 border-teal-200/50 dark:border-teal-800/50" : "bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 border-zinc-200/50 dark:border-zinc-800"}`}>
             <div className="flex items-center justify-center mb-4">
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${allCommitted ? "bg-teal-100 dark:bg-teal-500/20 border border-teal-200 dark:border-teal-500/30" : "bg-orange-100 dark:bg-orange-500/20 border border-orange-200 dark:border-orange-500/30"}`}>
                 {allCommitted ? <Lock className="w-8 h-8 text-teal-600 dark:text-teal-400" /> : <Unlock className="w-8 h-8 text-orange-600 dark:text-orange-400" />}
@@ -612,7 +612,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
           {!isSolo && (
           <div className="mb-5">
             <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Member Status</h3>
-            <div className="bg-white dark:bg-zinc-950 rounded-[28px] p-6 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
+            <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-6 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
               <div className="space-y-4">
                 {MEMBERS.map((member) => {
                   const isCommitted = memberCommitments[member];
@@ -722,7 +722,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
 
           {/* Budget setup prompt when no budget is set */}
           {budgetNotSet && (localExpenses.length > 0 || budgetData.transactions.length > 0) && !loadingExpenses && (
-            <div className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/30 dark:to-zinc-950 rounded-[28px] p-8 mb-5 shadow-lg border border-orange-200/50 dark:border-orange-800/50 text-center">
+            <div className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/30 dark:to-zinc-950 rounded-[20px] p-8 mb-5 shadow-lg border border-orange-200/50 dark:border-orange-800/50 text-center">
               <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-orange-200 dark:border-orange-800/50">
                 <span className="text-2xl">🎯</span>
               </div>
@@ -794,7 +794,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
           {(localExpenses.length > 0 || budgetData.transactions.length > 0 || !budgetNotSet) && (
           <>
           {/* Total Trip Card */}
-          <div className="bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 text-zinc-900 dark:text-white rounded-[28px] p-8 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
+          <div className="bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 text-zinc-900 dark:text-white rounded-[20px] p-8 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
             <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-3">
                 <div className="text-[11px] text-zinc-400 dark:text-zinc-500 tracking-widest font-bold">TOTAL TRIP</div>
@@ -916,7 +916,7 @@ export function Budget({ hideHeader }: { hideHeader?: boolean }) {
             const circumference = 2 * Math.PI * 70; // r=70
 
             return (
-              <div className="bg-white dark:bg-zinc-950 rounded-[28px] p-6 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
+              <div className="bg-white dark:bg-zinc-950 rounded-[20px] p-6 mb-5 shadow-lg border border-zinc-200/50 dark:border-zinc-800">
                 <h3 className="text-[11px] text-zinc-500 dark:text-zinc-500 tracking-widest font-bold mb-5 text-center">SPENDING BREAKDOWN</h3>
 
                 <div className="flex items-center gap-6">

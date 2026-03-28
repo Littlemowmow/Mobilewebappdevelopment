@@ -122,7 +122,7 @@ export function Profile() {
   return (
     <div className="px-5 py-4 max-w-md mx-auto pb-24">
       {/* Header */}
-      <h1 className="text-[28px] tracking-tight mb-6 pt-1 text-zinc-900 dark:text-white">Profile</h1>
+      <h1 className="text-[22px] tracking-tight mb-6 pt-1 text-zinc-900 dark:text-white">Profile</h1>
 
       {/* User Info */}
       <div className="flex items-center gap-4 mb-8 bg-gradient-to-br from-zinc-100 to-white dark:from-zinc-900 dark:to-zinc-800/50 p-5 rounded-[24px] border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
@@ -198,21 +198,21 @@ export function Profile() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-8">
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/40 border border-orange-200/80 dark:border-orange-700/40 rounded-[20px] p-5 text-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:scale-[1.02]">
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/40 border border-orange-200/80 dark:border-orange-700/40 rounded-2xl p-5 text-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:scale-[1.02]">
           <div className="w-10 h-10 bg-orange-100 dark:bg-orange-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 border border-orange-200/80 dark:border-orange-500/30">
             <Map className="w-5 h-5 text-orange-600 dark:text-orange-400" />
           </div>
           <div className="text-2xl mb-1 font-bold text-zinc-900 dark:text-white">{trips.length}</div>
           <div className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Trips</div>
         </div>
-        <div className="bg-gradient-to-br from-teal-50 to-teal-100/50 dark:from-teal-950/50 dark:to-teal-900/40 border border-teal-200/80 dark:border-teal-700/40 rounded-[20px] p-5 text-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:scale-[1.02]">
+        <div className="bg-gradient-to-br from-teal-50 to-teal-100/50 dark:from-teal-950/50 dark:to-teal-900/40 border border-teal-200/80 dark:border-teal-700/40 rounded-2xl p-5 text-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:scale-[1.02]">
           <div className="w-10 h-10 bg-teal-100 dark:bg-teal-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 border border-teal-200/80 dark:border-teal-500/30">
             <Award className="w-5 h-5 text-teal-600 dark:text-teal-400" />
           </div>
           <div className="text-2xl mb-1 font-bold text-zinc-900 dark:text-white">{cityCount}</div>
           <div className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Cities</div>
         </div>
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/50 dark:to-purple-900/40 border border-purple-200/80 dark:border-purple-700/40 rounded-[20px] p-5 text-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:scale-[1.02]">
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/50 dark:to-purple-900/40 border border-purple-200/80 dark:border-purple-700/40 rounded-2xl p-5 text-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:scale-[1.02]">
           <div className="w-10 h-10 bg-purple-100 dark:bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-3 border border-purple-200/80 dark:border-purple-500/30">
             <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
@@ -226,7 +226,7 @@ export function Profile() {
 
       {/* Menu Items */}
       <div className="space-y-2 mb-8">
-        <button onClick={() => setShowSettings(!showSettings)} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+        <button onClick={() => setShowSettings(!showSettings)} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
           <div className="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200/50 dark:border-zinc-700">
             <Settings className="w-5 h-5 text-zinc-700 dark:text-zinc-300" strokeWidth={2} />
           </div>
@@ -234,7 +234,7 @@ export function Profile() {
           <ChevronRight className={`w-5 h-5 text-zinc-400 dark:text-zinc-600 transition-transform ${showSettings ? 'rotate-90' : ''}`} />
         </button>
         {showSettings && (
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-5 space-y-4 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-5 space-y-4 shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
             <button
               onClick={toggleTheme}
               className="w-full flex items-center justify-between"
@@ -248,7 +248,7 @@ export function Profile() {
           </div>
         )}
 
-        <button onClick={() => setShowNotifications(!showNotifications)} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+        <button onClick={() => setShowNotifications(!showNotifications)} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
           <div className="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200/50 dark:border-zinc-700">
             <Bell className="w-5 h-5 text-zinc-700 dark:text-zinc-300" strokeWidth={2} />
           </div>
@@ -256,14 +256,14 @@ export function Profile() {
           <ChevronRight className={`w-5 h-5 text-zinc-400 dark:text-zinc-600 transition-transform ${showNotifications ? 'rotate-90' : ''}`} />
         </button>
         {showNotifications && (
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-6 text-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-6 text-center shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
             <BellOff className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
             <p className="text-[15px] font-medium text-zinc-500 dark:text-zinc-400">No new notifications</p>
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">You're all caught up!</p>
           </div>
         )}
 
-        <button onClick={() => window.open('mailto:weventrapp@gmail.com')} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-[20px] p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+        <button onClick={() => window.open('mailto:weventrapp@gmail.com')} className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl p-5 flex items-center gap-4 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
           <div className="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200/50 dark:border-zinc-700">
             <HelpCircle className="w-5 h-5 text-zinc-700 dark:text-zinc-300" strokeWidth={2} />
           </div>
@@ -276,7 +276,7 @@ export function Profile() {
       <h3 className="text-[15px] font-semibold mb-3 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Account</h3>
 
       {/* Logout */}
-      <button onClick={handleLogOut} className="w-full bg-gradient-to-br from-red-50 to-white dark:from-red-950/40 dark:to-red-900/40 border-2 border-red-200 dark:border-red-800/50 rounded-[20px] p-5 flex items-center gap-4 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-red-50 dark:hover:from-red-950/60 dark:hover:to-red-900/60 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+      <button onClick={handleLogOut} className="w-full bg-gradient-to-br from-red-50 to-white dark:from-red-950/40 dark:to-red-900/40 border-2 border-red-200 dark:border-red-800/50 rounded-2xl p-5 flex items-center gap-4 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-red-50 dark:hover:from-red-950/60 dark:hover:to-red-900/60 transition-all shadow-sm dark:shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
         <div className="w-11 h-11 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center border border-red-200/80 dark:border-red-700/50">
           <LogOut className="w-5 h-5" strokeWidth={2} />
         </div>

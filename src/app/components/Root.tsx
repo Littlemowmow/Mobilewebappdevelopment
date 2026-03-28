@@ -32,7 +32,7 @@ export function Root() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+    <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
       {/* Main Content */}
       <main className="max-w-md mx-auto">
         <Outlet />
@@ -40,7 +40,7 @@ export function Root() {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-zinc-900/85 border-t border-zinc-200/50 dark:border-zinc-700/40 backdrop-blur-2xl backdrop-saturate-[1.8] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_40px_rgba(0,0,0,0.6)] pb-[env(safe-area-inset-bottom,0px)]">
-        <div className="max-w-md mx-auto flex justify-around items-center h-20 px-2">
+        <div className="max-w-md mx-auto flex justify-around items-center h-16 px-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path ||
@@ -59,12 +59,12 @@ export function Root() {
                   </>
                 )}
                 <Icon
-                  className={`w-6 h-6 transition-all duration-200 relative z-10 ${
+                  className={`w-5 h-5 transition-all duration-200 relative z-10 ${
                     isActive ? 'text-orange-500 drop-shadow-[0_0_10px_rgba(249,115,22,0.4)]' : 'text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-300'
                   }`}
                   strokeWidth={isActive ? 2.5 : 1.8}
                 />
-                <span className={`text-[11px] font-semibold transition-all duration-200 relative z-10 truncate max-w-[80px] text-center block ${
+                <span className={`text-[10px] font-semibold transition-all duration-200 relative z-10 truncate max-w-[80px] text-center block ${
                   isActive ? 'text-orange-500' : 'text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-300'
                 }`}>
                   {item.label}

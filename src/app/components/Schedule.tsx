@@ -198,7 +198,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
         >
           <ArrowLeft className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
         </button>
-        <h1 className="text-[28px] tracking-tight text-zinc-900 dark:text-white">{activeTrip.name}</h1>
+        <h1 className="text-[22px] tracking-tight text-zinc-900 dark:text-white">{activeTrip.name}</h1>
       </div>
       )}
 
@@ -286,7 +286,7 @@ export function Schedule({ hideHeader }: { hideHeader?: boolean }) {
 
       {/* Date Header */}
       <div className="mb-5">
-        <h2 className="text-[24px] mb-1.5 font-semibold tracking-tight text-zinc-900 dark:text-white">{selectedDay === 0 ? "Arrival Day" : `Day ${selectedDay + 1}`}</h2>
+        <h2 className="text-[18px] mb-1.5 font-semibold tracking-tight text-zinc-900 dark:text-white">{selectedDay === 0 ? "Arrival Day" : `Day ${selectedDay + 1}`}</h2>
         <p className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium">{activeTrip.days[selectedDay]?.date} · {currentCity.name}</p>
       </div>
 
